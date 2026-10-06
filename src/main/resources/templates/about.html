@@ -4,12 +4,13 @@
 <head th:replace="fragments :: head (titulo='Acerca de')"></head>
 
 <body>
+<nav th:replace="${usuario != null} ? ~{fragments :: menuUsuario(${usuario})} : ~{fragments :: menuVisitante}"></nav>
 <div class="container-fluid">
     <div class="container-fluid">
         <h1>ToDoList</h1>
         <ul>
             <li>Desarrollada por Ismael Sánchez Faz </li>
-            <li>Versión 1.0.1</li>
+            <li>Versión 1.1.0 (en desarrollo)</li>
             <li>Fecha de release: 29/09/2026</li>
         </ul>
     </div>
