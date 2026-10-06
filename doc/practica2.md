@@ -49,5 +49,27 @@ enlaces del menú autenticado, y la ausencia de enlaces de login y registro.
 La prueba sin sesión también comprueba que no aparece el enlace de logout.
 Los datos de las pruebas se limpian mediante `clean-db.sql`.
 
-Queda pendiente incorporar el menú a las páginas de tareas; la issue #3 todavía
-no está completada.
+En este segundo incremento quedaba pendiente incorporar el menú a las páginas
+de tareas.
+
+### Tercer incremento: menú común en las páginas de tareas
+
+Las plantillas `listaTareas.html`, `formNuevaTarea.html` y `formEditarTarea.html`
+incorporan al principio del cuerpo el mismo fragmento autenticado:
+
+```html
+<nav th:replace="fragments :: menuUsuario(${usuario})"></nav>
+```
+
+El listado y el formulario de creación ya recibían el DTO `usuario`.
+`TareaController.formEditaTarea` ahora también recupera al propietario y lo añade
+al modelo, después de comprobar que coincide con el usuario autenticado.
+
+La prueba `paginasDeTareasMuestranMenuDelUsuario` de `TareaWebTest` recorre las
+tres rutas y verifica el nombre y los enlaces del menú. Utiliza un usuario
+persistido y simula su autenticación mediante `ManagerUserSession`, siguiendo
+el enfoque de las pruebas existentes.
+
+Con este incremento, el menú está integrado en las páginas actuales de tareas
+y en «Acerca de». Login y registro siguen sin barra. Se completa el alcance
+funcional de la issue #3; «Cuenta» permanece como opción futura.

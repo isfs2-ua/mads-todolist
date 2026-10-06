@@ -47,6 +47,7 @@ public class TareaWebTest {
         // Añadimos un usuario a la base de datos
         UsuarioData usuario = new UsuarioData();
         usuario.setEmail("user@ua");
+        usuario.setNombre("Usuario de tareas");
         usuario.setPassword("123");
         usuario = usuarioService.registrar(usuario);
 
@@ -60,6 +61,31 @@ public class TareaWebTest {
         ids.put("tareaId", tarea1.getId());
         return ids;
 
+    }
+
+    @Test
+    public void paginasDeTareasMuestranMenuDelUsuario() throws Exception {
+        Map<String, Long> ids = addUsuarioTareasBD();
+        Long usuarioId = ids.get("usuarioId");
+        when(managerUserSession.usuarioLogeado()).thenReturn(usuarioId);
+
+        String[] rutas = {
+                "/usuarios/" + usuarioId + "/tareas",
+                "/usuarios/" + usuarioId + "/tareas/nueva",
+                "/tareas/" + ids.get("tareaId") + "/editar"
+        };
+
+        for (String ruta : rutas) {
+            this.mockMvc.perform(get(ruta))
+                    .andExpect(status().isOk())
+                    .andExpect(content().string(containsString("<a class=\"navbar-brand\" href=\"/about\">ToDoList</a>")))
+                    .andExpect(content().string(containsString("href=\"/usuarios/" + usuarioId + "/tareas\">Tareas</a>")))
+                    .andExpect(content().string(containsString(">Usuario de tareas</button>")))
+                    .andExpect(content().string(containsString(">Cuenta</span>")))
+                    .andExpect(content().string(containsString("href=\"/logout\">Cerrar sesión Usuario de tareas</a>")))
+                    .andExpect(content().string(not(containsString("href=\"/login\""))))
+                    .andExpect(content().string(not(containsString("href=\"/registro\""))));
+        }
     }
 
     @Test
