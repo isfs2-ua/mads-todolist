@@ -4,7 +4,7 @@
 <head th:replace="fragments :: head (titulo='Acerca de')"></head>
 
 <body>
-<nav th:replace="fragments :: menuVisitante"></nav>
+<nav th:replace="${usuario != null} ? ~{fragments :: menuUsuario(${usuario})} : ~{fragments :: menuVisitante}"></nav>
 <div class="container-fluid">
     <div class="container-fluid">
         <h1>ToDoList</h1>
