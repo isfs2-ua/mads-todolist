@@ -7,6 +7,18 @@
     <link rel="stylesheet" th:href="@{/css/bootstrap.min.css}">
 </head>
 
+<nav th:fragment="menuVisitante" class="navbar navbar-expand navbar-light bg-light" aria-label="Navegación principal">
+    <a class="navbar-brand" th:href="@{/about}">ToDoList</a>
+    <ul class="navbar-nav ml-auto">
+        <li class="nav-item">
+            <a class="nav-link" th:href="@{/login}">Login</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" th:href="@{/registro}">Registro</a>
+        </li>
+    </ul>
+</nav>
+
 <div th:fragment="javascript">
     <script th:src="@{/js/jquery.min.js}"></script>
     <script th:src="@{/js/popper.min.js}"></script>
