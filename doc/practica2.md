@@ -206,3 +206,52 @@ ha comprobado el formato del diff mediante `git diff --check`, sin incidencias.
 Con este incremento se completa la funcionalidad de la issue #4: `/registrados`
 muestra los identificadores y correos de todos los usuarios, tanto con sesión
 como sin ella, con el menú común correspondiente y un mensaje si no hay datos.
+
+## 004 Página de descripción de un usuario
+
+La [issue #5](https://github.com/isfs2-ua/mads-todolist/issues/5) solicita un
+enlace desde el listado de usuarios a su descripción en `/registrados/{id}`,
+con todos sus datos salvo la contraseña.
+
+### Primer incremento: consulta y página de descripción
+
+Se ha añadido `UsuarioController.descripcionUsuario`, que atiende GET
+`/registrados/{id}` y reutiliza `UsuarioService.findById()` para recuperar el
+usuario solicitado. Si existe, lo añade al modelo como `usuarioDescripcion` y
+devuelve la vista `descripcionUsuario`. Este atributo identifica al usuario
+consultado y permite distinguirlo del usuario de sesión cuando se incorpore el
+menú en el tercer incremento.
+
+Si el identificador no corresponde a ningún usuario, se lanza la nueva
+`UsuarioNotFoundException`, anotada con `@ResponseStatus`: devuelve HTTP 404
+con el motivo «Usuario no encontrado», siguiendo el patrón de las excepciones
+web existentes del proyecto.
+
+La plantilla `descripcionUsuario.html` reutiliza el fragmento `head` y Bootstrap.
+Muestra identificador, correo electrónico, nombre y fecha de nacimiento mediante
+una lista de descripción (`dl`, `dt`, `dd`) y `th:text`. La fecha se presenta en
+formato `dd/MM/yyyy`. Para nombre vacío o ausente y fecha ausente se muestra
+«Sin especificar», ya que ambos campos son opcionales en el registro. La
+contraseña no se incorpora al HTML. La consulta es accesible sin sesión.
+
+`DescripcionUsuarioWebTest` incorpora tres pruebas de integración con MockMvc,
+el servicio real y H2; `clean-db.sql` limpia los datos antes de cada prueba:
+
+- `descripcionSinSesionMuestraDatosSinPassword` comprueba HTTP 200, la vista,
+  los cuatro datos y la ausencia de la contraseña y de su etiqueta.
+- `descripcionSinDatosOpcionalesMuestraSinEspecificar` comprueba que la página
+  funciona para usuarios registrados sin nombre ni fecha de nacimiento.
+- `descripcionUsuarioInexistenteDevuelve404` comprueba HTTP 404 y su motivo.
+
+Comando de validación del incremento junto con el listado y el servicio:
+
+```bash
+./mvnw -Dtest=DescripcionUsuarioWebTest,ListadoUsuariosWebTest,UsuarioServiceTest test
+```
+
+Resultado: **15 pruebas ejecutadas, 0 fallos, 0 errores y 0 omitidas**
+(`BUILD SUCCESS`): tres de la descripción, cuatro del listado y ocho del
+servicio. `git diff --check` también pasa sin incidencias.
+
+Los enlaces desde el listado y de vuelta a él corresponden al segundo
+incremento. El menú según la sesión se incorporará en el tercero.
