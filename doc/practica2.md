@@ -73,3 +73,136 @@ el enfoque de las pruebas existentes.
 Con este incremento, el menú está integrado en las páginas actuales de tareas
 y en «Acerca de». Login y registro siguen sin barra. Se completa el alcance
 funcional de la issue #3; «Cuenta» permanece como opción futura.
+
+## 003 Listado de usuarios
+
+La [issue #4](https://github.com/isfs2-ua/mads-todolist/issues/4) solicita que
+la URL `/registrados` muestre el identificador y el correo electrónico de los
+usuarios registrados.
+
+### Primer incremento: servicio de consulta del listado
+
+Se ha añadido `UsuarioService.findAll()`, que devuelve una
+`List<UsuarioData>` con todos los usuarios registrados. Reutiliza el método
+`findAll()` heredado de `CrudRepository` en `UsuarioRepository` y convierte
+cada entidad `Usuario` al DTO existente mediante `ModelMapper`, siguiendo el
+patrón de las demás consultas del servicio.
+
+La consulta utiliza `@Transactional(readOnly = true)`. Cuando no hay usuarios,
+devuelve una lista vacía. No se establece un orden de presentación en este
+incremento ni se modifica el repositorio o el modelo de datos.
+
+Se han añadido dos pruebas de integración a `UsuarioServiceTest`:
+
+- `servicioListadoUsuariosDevuelveIdentificadoresYCorreos` registra dos usuarios
+  y comprueba que el listado contiene exactamente sus identificadores y correos,
+  sin depender del orden de los resultados.
+- `servicioListadoUsuariosSinUsuariosDevuelveListaVacia` comprueba la consulta
+  sobre una base de datos sin usuarios.
+
+Las pruebas utilizan la base de datos H2 de pruebas y `clean-db.sql`, que limpia
+las tareas y los usuarios antes de cada prueba. El comando de validación es:
+
+```bash
+./mvnw -Dtest=UsuarioServiceTest test
+```
+
+Resultado de la validación: **8 pruebas ejecutadas, 0 fallos, 0 errores y
+0 omitidas** (`BUILD SUCCESS`), incluidas las dos pruebas nuevas.
+
+La ruta `/registrados`, su controlador y su plantilla quedan pendientes del
+segundo incremento. La integración del menú corresponde al tercero.
+
+### Segundo incremento: página de usuarios registrados
+
+Se ha creado `UsuarioController` con el endpoint GET `/registrados`. El método
+`listadoUsuarios` consulta `UsuarioService.findAll()`, añade la colección al
+modelo con el atributo `usuarios` y devuelve la vista `listaUsuarios`.
+La ruta es accesible sin sesión, tal como establece el alcance acordado para
+la issue #4.
+
+La nueva plantilla `listaUsuarios.html` reutiliza el fragmento `head` y los
+estilos Bootstrap del proyecto. Muestra el título «Listado de usuarios
+registrados» y una tabla con las columnas «Identificador» y «Correo electrónico».
+Cada fila se genera con `th:each`, y los valores se muestran con `th:text`.
+Se presentan únicamente el identificador y el correo; los demás campos del DTO,
+incluida la contraseña, no se incorporan a la página. Si la colección está vacía,
+se mantiene la cabecera de la tabla y aparece «No hay usuarios registrados.».
+
+`ListadoUsuariosWebTest` añade dos pruebas de integración con MockMvc, el
+servicio real y la base de datos H2, limpiada antes de cada prueba mediante
+`clean-db.sql`:
+
+- `registradosSinSesionMuestraIdentificadoresYCorreos` registra dos usuarios y
+  consulta `/registrados` sin sesión. Comprueba HTTP 200, la vista, las cabeceras,
+  las dos filas y la asociación de cada identificador con su correo, sin depender
+  del orden. También comprueba que no aparecen contraseñas ni el mensaje de
+  listado vacío.
+- `registradosSinUsuariosMuestraListadoVacio` comprueba HTTP 200, la vista, la
+  ausencia de filas y el mensaje cuando no hay usuarios.
+
+Comando de validación del incremento y del servicio del primer commit:
+
+```bash
+./mvnw -Dtest=UsuarioServiceTest,ListadoUsuariosWebTest test
+```
+
+Resultado: **10 pruebas ejecutadas, 0 fallos, 0 errores y 0 omitidas**
+(`BUILD SUCCESS`): ocho del servicio y dos de la nueva página.
+
+Las comprobaciones de contenido utilizan cadenas y expresiones regulares sobre
+el HTML renderizado. La primera ejecución con XPath falló porque el fragmento
+`head` genera HTML con elementos vacíos como `<link>` sin cierre XML; se
+ajustaron las pruebas al formato HTML del proyecto y se repitió la validación
+con el resultado anterior.
+
+La integración del menú de visitante o usuario queda pendiente del tercer
+incremento.
+
+### Tercer incremento: integración del menú y cierre de la funcionalidad
+
+`UsuarioController.listadoUsuarios` consulta la sesión mediante
+`ManagerUserSession.usuarioLogeado()` y recupera el DTO del usuario autenticado
+con `UsuarioService.findById`. Lo incorpora al modelo como `usuario`, siguiendo
+el patrón de «Acerca de». Si no hay sesión o su identificador corresponde a un
+usuario que ya no existe, el atributo queda a nulo y se muestra el menú de
+visitante. La consulta del listado completo sigue disponible en ambos casos.
+
+La plantilla `listaUsuarios.html` selecciona el fragmento común según ese
+atributo:
+
+```html
+<nav th:replace="${usuario != null} ? ~{fragments :: menuUsuario(${usuario})} : ~{fragments :: menuVisitante}"></nav>
+```
+
+El menú de visitante ofrece «ToDoList», «Login» y «Registro». El menú autenticado
+muestra «ToDoList», «Tareas» y el desplegable con el nombre del usuario, «Cuenta»
+y «Cerrar sesión». Se añade también el fragmento `javascript` para cargar jQuery,
+Popper y Bootstrap, necesarios para el desplegable.
+
+Se ha ampliado `ListadoUsuariosWebTest` con las siguientes comprobaciones:
+
+- La prueba existente sin sesión verifica los enlaces del menú de visitante y
+  la ausencia de logout, además del contenido de la tabla.
+- `registradosConSesionMuestraMenuDelUsuarioYListadoCompleto` utiliza una sesión
+  HTTP con el identificador de un usuario registrado. Comprueba su nombre, los
+  enlaces a sus tareas y logout, «Cuenta», la ausencia de login y registro y la
+  inclusión de Bootstrap. También verifica que el listado contiene tanto al
+  usuario autenticado como a otro usuario registrado.
+- `registradosConUsuarioDeSesionInexistenteMuestraMenuVisitante` verifica que una
+  sesión con un identificador inexistente mantiene HTTP 200 y muestra el menú
+  de visitante y el listado vacío.
+
+Validación final de los tres incrementos mediante la suite completa:
+
+```bash
+./mvnw test
+```
+
+Resultado: **44 pruebas ejecutadas, 0 fallos, 0 errores y 0 omitidas**
+(`BUILD SUCCESS`), incluidas las cuatro pruebas web del listado. También se
+ha comprobado el formato del diff mediante `git diff --check`, sin incidencias.
+
+Con este incremento se completa la funcionalidad de la issue #4: `/registrados`
+muestra los identificadores y correos de todos los usuarios, tanto con sesión
+como sin ella, con el menú común correspondiente y un mensaje si no hay datos.

@@ -7,7 +7,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.jdbc.Sql;
 
+import java.util.List;
+
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.tuple;
 
 @SpringBootTest
 @Sql(scripts = "/clean-db.sql")
@@ -25,6 +28,30 @@ public class UsuarioServiceTest {
         usuario.setPassword("123");
         UsuarioData nuevoUsuario = usuarioService.registrar(usuario);
         return nuevoUsuario.getId();
+    }
+
+    @Test
+    public void servicioListadoUsuariosDevuelveIdentificadoresYCorreos() {
+        // GIVEN
+        Long primerUsuarioId = addUsuarioBD();
+        UsuarioData segundoUsuario = new UsuarioData();
+        segundoUsuario.setEmail("otra.persona@ua");
+        segundoUsuario.setPassword("456");
+        UsuarioData segundoUsuarioRegistrado = usuarioService.registrar(segundoUsuario);
+
+        // WHEN
+        List<UsuarioData> usuarios = usuarioService.findAll();
+
+        // THEN
+        assertThat(usuarios).extracting("id", "email")
+                .containsExactlyInAnyOrder(
+                        tuple(primerUsuarioId, "user@ua"),
+                        tuple(segundoUsuarioRegistrado.getId(), "otra.persona@ua"));
+    }
+
+    @Test
+    public void servicioListadoUsuariosSinUsuariosDevuelveListaVacia() {
+        assertThat(usuarioService.findAll()).isEmpty();
     }
 
     @Test
