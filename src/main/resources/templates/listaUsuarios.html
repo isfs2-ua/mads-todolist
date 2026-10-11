@@ -14,12 +14,16 @@
                 <tr>
                     <th scope="col">Identificador</th>
                     <th scope="col">Correo electrónico</th>
+                    <th scope="col">Acción</th>
                 </tr>
                 </thead>
                 <tbody>
                 <tr th:each="usuario : ${usuarios}">
                     <td th:text="${usuario.id}"></td>
                     <td th:text="${usuario.email}"></td>
+                    <td>
+                        <a class="btn btn-primary btn-sm" th:href="@{/registrados/{id}(id=${usuario.id})}">Ver descripción</a>
+                    </td>
                 </tr>
                 </tbody>
             </table>

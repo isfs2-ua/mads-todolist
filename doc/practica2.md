@@ -255,3 +255,40 @@ servicio. `git diff --check` también pasa sin incidencias.
 
 Los enlaces desde el listado y de vuelta a él corresponden al segundo
 incremento. El menú según la sesión se incorporará en el tercero.
+
+### Segundo incremento: navegación entre listado y descripción
+
+Se ha añadido la columna «Acción» a `listaUsuarios.html`. Cada fila ofrece el
+enlace «Ver descripción», generado con
+`th:href="@{/registrados/{id}(id=${usuario.id})}"`, que apunta a la ficha del
+usuario de esa fila. Se mantienen las columnas de identificador y correo y el
+mensaje del listado vacío.
+
+En `descripcionUsuario.html` se incorpora «Volver al listado» con destino
+`/registrados`, tanto para usuarios con todos sus datos como para los que no
+han indicado los campos opcionales. Ambos enlaces reutilizan estilos Bootstrap.
+No es necesario modificar los controladores ni el servicio para este incremento.
+
+Se han ampliado las pruebas existentes:
+
+- Las pruebas del listado con y sin sesión comprueban que cada enlace «Ver
+  descripción» está en la fila del identificador y correo correspondientes.
+  La comprobación de las dos filas contempla ahora la tercera columna, y se
+  verifica su cabecera «Acción». Se utiliza un método auxiliar para comprobar
+  la asociación entre datos y enlace sin depender del orden de las filas.
+- Las pruebas de descripción con datos completos y con datos opcionales
+  ausentes verifican «Volver al listado» y su destino `/registrados`.
+- Se mantienen las comprobaciones del listado vacío, la ausencia de contraseñas
+  y HTTP 404 para usuarios inexistentes.
+
+Comando de validación del incremento junto con el servicio:
+
+```bash
+./mvnw -Dtest=DescripcionUsuarioWebTest,ListadoUsuariosWebTest,UsuarioServiceTest test
+```
+
+Resultado: **15 pruebas ejecutadas, 0 fallos, 0 errores y 0 omitidas**
+(`BUILD SUCCESS`). `git diff --check` también pasa sin incidencias.
+
+El menú de la ficha según la sesión y la validación de la suite completa quedan
+pendientes del tercer incremento.

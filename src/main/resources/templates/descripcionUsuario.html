@@ -18,6 +18,7 @@
                 <dt>Fecha de nacimiento</dt>
                 <dd th:text="${usuarioDescripcion.fechaNacimiento != null ? #dates.format(usuarioDescripcion.fechaNacimiento, 'dd/MM/yyyy') : 'Sin especificar'}"></dd>
             </dl>
+            <a class="btn btn-link" th:href="@{/registrados}">Volver al listado</a>
         </div>
     </div>
 </div>

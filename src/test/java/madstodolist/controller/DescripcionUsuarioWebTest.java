@@ -40,6 +40,7 @@ public class DescripcionUsuarioWebTest {
         mockMvc.perform(get("/registrados/" + usuario.getId()))
                 .andExpect(status().isOk())
                 .andExpect(view().name("descripcionUsuario"))
+                .andExpect(content().string(containsString("href=\"/registrados\">Volver al listado</a>")))
                 .andExpect(content().string(matchesPattern("(?s).*<dt>Identificador</dt>\\s*<dd>"
                         + usuario.getId() + "</dd>.*")))
                 .andExpect(content().string(matchesPattern("(?s).*<dt>Correo electrónico</dt>\\s*"
@@ -60,6 +61,7 @@ public class DescripcionUsuarioWebTest {
 
         mockMvc.perform(get("/registrados/" + usuario.getId()))
                 .andExpect(status().isOk())
+                .andExpect(content().string(containsString("href=\"/registrados\">Volver al listado</a>")))
                 .andExpect(content().string(matchesPattern("(?s).*<dt>Nombre</dt>\\s*"
                         + "<dd>Sin especificar</dd>.*")))
                 .andExpect(content().string(matchesPattern("(?s).*<dt>Fecha de nacimiento</dt>\\s*"
