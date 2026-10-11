@@ -112,3 +112,49 @@ Resultado de la validación: **8 pruebas ejecutadas, 0 fallos, 0 errores y
 
 La ruta `/registrados`, su controlador y su plantilla quedan pendientes del
 segundo incremento. La integración del menú corresponde al tercero.
+
+### Segundo incremento: página de usuarios registrados
+
+Se ha creado `UsuarioController` con el endpoint GET `/registrados`. El método
+`listadoUsuarios` consulta `UsuarioService.findAll()`, añade la colección al
+modelo con el atributo `usuarios` y devuelve la vista `listaUsuarios`.
+La ruta es accesible sin sesión, tal como establece el alcance acordado para
+la issue #4.
+
+La nueva plantilla `listaUsuarios.html` reutiliza el fragmento `head` y los
+estilos Bootstrap del proyecto. Muestra el título «Listado de usuarios
+registrados» y una tabla con las columnas «Identificador» y «Correo electrónico».
+Cada fila se genera con `th:each`, y los valores se muestran con `th:text`.
+Se presentan únicamente el identificador y el correo; los demás campos del DTO,
+incluida la contraseña, no se incorporan a la página. Si la colección está vacía,
+se mantiene la cabecera de la tabla y aparece «No hay usuarios registrados.».
+
+`ListadoUsuariosWebTest` añade dos pruebas de integración con MockMvc, el
+servicio real y la base de datos H2, limpiada antes de cada prueba mediante
+`clean-db.sql`:
+
+- `registradosSinSesionMuestraIdentificadoresYCorreos` registra dos usuarios y
+  consulta `/registrados` sin sesión. Comprueba HTTP 200, la vista, las cabeceras,
+  las dos filas y la asociación de cada identificador con su correo, sin depender
+  del orden. También comprueba que no aparecen contraseñas ni el mensaje de
+  listado vacío.
+- `registradosSinUsuariosMuestraListadoVacio` comprueba HTTP 200, la vista, la
+  ausencia de filas y el mensaje cuando no hay usuarios.
+
+Comando de validación del incremento y del servicio del primer commit:
+
+```bash
+./mvnw -Dtest=UsuarioServiceTest,ListadoUsuariosWebTest test
+```
+
+Resultado: **10 pruebas ejecutadas, 0 fallos, 0 errores y 0 omitidas**
+(`BUILD SUCCESS`): ocho del servicio y dos de la nueva página.
+
+Las comprobaciones de contenido utilizan cadenas y expresiones regulares sobre
+el HTML renderizado. La primera ejecución con XPath falló porque el fragmento
+`head` genera HTML con elementos vacíos como `<link>` sin cierre XML; se
+ajustaron las pruebas al formato HTML del proyecto y se repitió la validación
+con el resultado anterior.
+
+La integración del menú de visitante o usuario queda pendiente del tercer
+incremento.
