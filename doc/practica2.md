@@ -73,3 +73,42 @@ el enfoque de las pruebas existentes.
 Con este incremento, el menú está integrado en las páginas actuales de tareas
 y en «Acerca de». Login y registro siguen sin barra. Se completa el alcance
 funcional de la issue #3; «Cuenta» permanece como opción futura.
+
+## 003 Listado de usuarios
+
+La [issue #4](https://github.com/isfs2-ua/mads-todolist/issues/4) solicita que
+la URL `/registrados` muestre el identificador y el correo electrónico de los
+usuarios registrados.
+
+### Primer incremento: servicio de consulta del listado
+
+Se ha añadido `UsuarioService.findAll()`, que devuelve una
+`List<UsuarioData>` con todos los usuarios registrados. Reutiliza el método
+`findAll()` heredado de `CrudRepository` en `UsuarioRepository` y convierte
+cada entidad `Usuario` al DTO existente mediante `ModelMapper`, siguiendo el
+patrón de las demás consultas del servicio.
+
+La consulta utiliza `@Transactional(readOnly = true)`. Cuando no hay usuarios,
+devuelve una lista vacía. No se establece un orden de presentación en este
+incremento ni se modifica el repositorio o el modelo de datos.
+
+Se han añadido dos pruebas de integración a `UsuarioServiceTest`:
+
+- `servicioListadoUsuariosDevuelveIdentificadoresYCorreos` registra dos usuarios
+  y comprueba que el listado contiene exactamente sus identificadores y correos,
+  sin depender del orden de los resultados.
+- `servicioListadoUsuariosSinUsuariosDevuelveListaVacia` comprueba la consulta
+  sobre una base de datos sin usuarios.
+
+Las pruebas utilizan la base de datos H2 de pruebas y `clean-db.sql`, que limpia
+las tareas y los usuarios antes de cada prueba. El comando de validación es:
+
+```bash
+./mvnw -Dtest=UsuarioServiceTest test
+```
+
+Resultado de la validación: **8 pruebas ejecutadas, 0 fallos, 0 errores y
+0 omitidas** (`BUILD SUCCESS`), incluidas las dos pruebas nuevas.
+
+La ruta `/registrados`, su controlador y su plantilla quedan pendientes del
+segundo incremento. La integración del menú corresponde al tercero.
