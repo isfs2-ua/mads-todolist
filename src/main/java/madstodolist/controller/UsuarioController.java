@@ -35,6 +35,9 @@ public class UsuarioController {
             throw new UsuarioNotFoundException();
         }
         model.addAttribute("usuarioDescripcion", usuario);
+        Long idUsuarioLogeado = managerUserSession.usuarioLogeado();
+        UsuarioData usuarioLogeado = idUsuarioLogeado != null ? usuarioService.findById(idUsuarioLogeado) : null;
+        model.addAttribute("usuario", usuarioLogeado);
         return "descripcionUsuario";
     }
 }

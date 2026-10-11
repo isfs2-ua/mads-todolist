@@ -292,3 +292,54 @@ Resultado: **15 pruebas ejecutadas, 0 fallos, 0 errores y 0 omitidas**
 
 El menú de la ficha según la sesión y la validación de la suite completa quedan
 pendientes del tercer incremento.
+
+### Tercer incremento: menú de la descripción y validación final
+
+`UsuarioController.descripcionUsuario` recupera el usuario autenticado mediante
+`ManagerUserSession.usuarioLogeado()` y `UsuarioService.findById()` y lo añade
+al modelo como `usuario`. El atributo `usuarioDescripcion` sigue conteniendo
+al usuario solicitado en la URL. Así, al consultar la ficha de otra persona,
+el nombre y los enlaces de tareas y logout del menú corresponden a quien ha
+iniciado sesión, mientras que la ficha muestra los datos de la persona consultada.
+
+`descripcionUsuario.html` selecciona el fragmento de menú común de la misma
+forma que el listado y «Acerca de»:
+
+```html
+<nav th:replace="${usuario != null} ? ~{fragments :: menuUsuario(${usuario})} : ~{fragments :: menuVisitante}"></nav>
+```
+
+Sin sesión, o si el usuario de la sesión ya no existe, se muestra el menú de
+visitante. Se añade el fragmento `javascript` para cargar jQuery, Popper y
+Bootstrap, necesarios para el desplegable del menú autenticado. La ficha
+mantiene sus datos, el enlace de vuelta al listado y HTTP 404 si el usuario
+consultado no existe.
+
+Se ha ampliado `DescripcionUsuarioWebTest`:
+
+- La prueba sin sesión comprueba los enlaces de «ToDoList», «Login» y «Registro»
+  y la ausencia de logout, además de los datos y la ausencia de contraseña.
+- `descripcionDeOtroUsuarioMuestraMenuDelUsuarioLogeado` registra dos usuarios
+  y consulta la ficha del segundo con la sesión del primero. Comprueba que el
+  menú muestra el nombre, las tareas y el logout del primero, y que la ficha
+  muestra los cuatro datos del segundo. También verifica «Cuenta», Bootstrap,
+  el enlace de vuelta y la ausencia de ambas contraseñas y de los enlaces de
+  login y registro.
+- `descripcionConUsuarioDeSesionInexistenteMuestraMenuVisitante` comprueba HTTP
+  200, el menú de visitante y los datos de la ficha con una sesión cuyo
+  identificador ya no corresponde a ningún usuario.
+
+Validación final de los tres incrementos con la suite completa:
+
+```bash
+./mvnw test
+```
+
+Resultado: **49 pruebas ejecutadas, 0 fallos, 0 errores y 0 omitidas**
+(`BUILD SUCCESS`), incluidas las cinco pruebas web de la descripción.
+`git diff --check` también pasa sin incidencias.
+
+Con este incremento se completa la funcionalidad de la issue #5: cada usuario
+del listado tiene un enlace a `/registrados/{id}`, su ficha muestra todos sus
+datos salvo la contraseña y permite volver al listado, con el menú
+correspondiente a la sesión.

@@ -6,6 +6,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.mock.web.MockHttpSession;
 import org.springframework.test.context.jdbc.Sql;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -40,6 +41,10 @@ public class DescripcionUsuarioWebTest {
         mockMvc.perform(get("/registrados/" + usuario.getId()))
                 .andExpect(status().isOk())
                 .andExpect(view().name("descripcionUsuario"))
+                .andExpect(content().string(containsString("<a class=\"navbar-brand\" href=\"/about\">ToDoList</a>")))
+                .andExpect(content().string(containsString("<a class=\"nav-link\" href=\"/login\">Login</a>")))
+                .andExpect(content().string(containsString("<a class=\"nav-link\" href=\"/registro\">Registro</a>")))
+                .andExpect(content().string(not(containsString("href=\"/logout\""))))
                 .andExpect(content().string(containsString("href=\"/registrados\">Volver al listado</a>")))
                 .andExpect(content().string(matchesPattern("(?s).*<dt>Identificador</dt>\\s*<dd>"
                         + usuario.getId() + "</dd>.*")))
@@ -66,6 +71,68 @@ public class DescripcionUsuarioWebTest {
                         + "<dd>Sin especificar</dd>.*")))
                 .andExpect(content().string(matchesPattern("(?s).*<dt>Fecha de nacimiento</dt>\\s*"
                         + "<dd>Sin especificar</dd>.*")));
+    }
+
+    @Test
+    public void descripcionDeOtroUsuarioMuestraMenuDelUsuarioLogeado() throws Exception {
+        UsuarioData usuarioLogeado = new UsuarioData();
+        usuarioLogeado.setEmail("sesion@ua.es");
+        usuarioLogeado.setNombre("Usuario de sesión");
+        usuarioLogeado.setPassword("clave-sesion-privada");
+        usuarioLogeado = usuarioService.registrar(usuarioLogeado);
+
+        UsuarioData usuarioConsultado = new UsuarioData();
+        usuarioConsultado.setEmail("consultado@ua.es");
+        usuarioConsultado.setNombre("Usuario consultado");
+        usuarioConsultado.setPassword("clave-consultado-privada");
+        usuarioConsultado.setFechaNacimiento(new SimpleDateFormat("dd/MM/yyyy").parse("20/06/1990"));
+        usuarioConsultado = usuarioService.registrar(usuarioConsultado);
+
+        MockHttpSession session = new MockHttpSession();
+        session.setAttribute("idUsuarioLogeado", usuarioLogeado.getId());
+
+        mockMvc.perform(get("/registrados/" + usuarioConsultado.getId()).session(session))
+                .andExpect(status().isOk())
+                .andExpect(view().name("descripcionUsuario"))
+                .andExpect(content().string(containsString("<a class=\"navbar-brand\" href=\"/about\">ToDoList</a>")))
+                .andExpect(content().string(containsString("href=\"/usuarios/" + usuarioLogeado.getId() + "/tareas\">Tareas</a>")))
+                .andExpect(content().string(containsString(">Usuario de sesión</button>")))
+                .andExpect(content().string(containsString(">Cuenta</span>")))
+                .andExpect(content().string(containsString("href=\"/logout\">Cerrar sesión Usuario de sesión</a>")))
+                .andExpect(content().string(not(containsString("href=\"/usuarios/" + usuarioConsultado.getId() + "/tareas\""))))
+                .andExpect(content().string(not(containsString(">Usuario consultado</button>"))))
+                .andExpect(content().string(not(containsString("href=\"/login\""))))
+                .andExpect(content().string(not(containsString("href=\"/registro\""))))
+                .andExpect(content().string(containsString("src=\"/js/bootstrap.min.js\"")))
+                .andExpect(content().string(containsString("href=\"/registrados\">Volver al listado</a>")))
+                .andExpect(content().string(matchesPattern("(?s).*<dt>Identificador</dt>\\s*<dd>"
+                        + usuarioConsultado.getId() + "</dd>.*")))
+                .andExpect(content().string(matchesPattern("(?s).*<dt>Correo electrónico</dt>\\s*"
+                        + "<dd>consultado@ua[.]es</dd>.*")))
+                .andExpect(content().string(matchesPattern("(?s).*<dt>Nombre</dt>\\s*"
+                        + "<dd>Usuario consultado</dd>.*")))
+                .andExpect(content().string(matchesPattern("(?s).*<dt>Fecha de nacimiento</dt>\\s*"
+                        + "<dd>20/06/1990</dd>.*")))
+                .andExpect(content().string(not(containsString("clave-sesion-privada"))))
+                .andExpect(content().string(not(containsString("clave-consultado-privada"))));
+    }
+
+    @Test
+    public void descripcionConUsuarioDeSesionInexistenteMuestraMenuVisitante() throws Exception {
+        UsuarioData usuario = new UsuarioData();
+        usuario.setEmail("ficha@ua.es");
+        usuario.setPassword("123");
+        usuario = usuarioService.registrar(usuario);
+
+        MockHttpSession session = new MockHttpSession();
+        session.setAttribute("idUsuarioLogeado", Long.MAX_VALUE);
+
+        mockMvc.perform(get("/registrados/" + usuario.getId()).session(session))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("<a class=\"nav-link\" href=\"/login\">Login</a>")))
+                .andExpect(content().string(containsString("<a class=\"nav-link\" href=\"/registro\">Registro</a>")))
+                .andExpect(content().string(not(containsString("href=\"/logout\""))))
+                .andExpect(content().string(containsString("<dd>ficha@ua.es</dd>")));
     }
 
     @Test
