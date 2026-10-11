@@ -158,3 +158,51 @@ con el resultado anterior.
 
 La integración del menú de visitante o usuario queda pendiente del tercer
 incremento.
+
+### Tercer incremento: integración del menú y cierre de la funcionalidad
+
+`UsuarioController.listadoUsuarios` consulta la sesión mediante
+`ManagerUserSession.usuarioLogeado()` y recupera el DTO del usuario autenticado
+con `UsuarioService.findById`. Lo incorpora al modelo como `usuario`, siguiendo
+el patrón de «Acerca de». Si no hay sesión o su identificador corresponde a un
+usuario que ya no existe, el atributo queda a nulo y se muestra el menú de
+visitante. La consulta del listado completo sigue disponible en ambos casos.
+
+La plantilla `listaUsuarios.html` selecciona el fragmento común según ese
+atributo:
+
+```html
+<nav th:replace="${usuario != null} ? ~{fragments :: menuUsuario(${usuario})} : ~{fragments :: menuVisitante}"></nav>
+```
+
+El menú de visitante ofrece «ToDoList», «Login» y «Registro». El menú autenticado
+muestra «ToDoList», «Tareas» y el desplegable con el nombre del usuario, «Cuenta»
+y «Cerrar sesión». Se añade también el fragmento `javascript` para cargar jQuery,
+Popper y Bootstrap, necesarios para el desplegable.
+
+Se ha ampliado `ListadoUsuariosWebTest` con las siguientes comprobaciones:
+
+- La prueba existente sin sesión verifica los enlaces del menú de visitante y
+  la ausencia de logout, además del contenido de la tabla.
+- `registradosConSesionMuestraMenuDelUsuarioYListadoCompleto` utiliza una sesión
+  HTTP con el identificador de un usuario registrado. Comprueba su nombre, los
+  enlaces a sus tareas y logout, «Cuenta», la ausencia de login y registro y la
+  inclusión de Bootstrap. También verifica que el listado contiene tanto al
+  usuario autenticado como a otro usuario registrado.
+- `registradosConUsuarioDeSesionInexistenteMuestraMenuVisitante` verifica que una
+  sesión con un identificador inexistente mantiene HTTP 200 y muestra el menú
+  de visitante y el listado vacío.
+
+Validación final de los tres incrementos mediante la suite completa:
+
+```bash
+./mvnw test
+```
+
+Resultado: **44 pruebas ejecutadas, 0 fallos, 0 errores y 0 omitidas**
+(`BUILD SUCCESS`), incluidas las cuatro pruebas web del listado. También se
+ha comprobado el formato del diff mediante `git diff --check`, sin incidencias.
+
+Con este incremento se completa la funcionalidad de la issue #4: `/registrados`
+muestra los identificadores y correos de todos los usuarios, tanto con sesión
+como sin ella, con el menú común correspondiente y un mensaje si no hay datos.

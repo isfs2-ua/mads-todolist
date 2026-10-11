@@ -6,6 +6,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.mock.web.MockHttpSession;
 import org.springframework.test.context.jdbc.Sql;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -41,6 +42,10 @@ public class ListadoUsuariosWebTest {
         mockMvc.perform(get("/registrados"))
                 .andExpect(status().isOk())
                 .andExpect(view().name("listaUsuarios"))
+                .andExpect(content().string(containsString("<a class=\"navbar-brand\" href=\"/about\">ToDoList</a>")))
+                .andExpect(content().string(containsString("<a class=\"nav-link\" href=\"/login\">Login</a>")))
+                .andExpect(content().string(containsString("<a class=\"nav-link\" href=\"/registro\">Registro</a>")))
+                .andExpect(content().string(not(containsString("href=\"/logout\""))))
                 .andExpect(content().string(containsString("<th scope=\"col\">Identificador</th>")))
                 .andExpect(content().string(containsString("<th scope=\"col\">Correo electrónico</th>")))
                 .andExpect(content().string(matchesPattern("(?s).*<tbody>\\s*"
@@ -53,6 +58,52 @@ public class ListadoUsuariosWebTest {
                 .andExpect(content().string(not(containsString("clave-primero"))))
                 .andExpect(content().string(not(containsString("clave-segundo"))))
                 .andExpect(content().string(not(containsString("No hay usuarios registrados."))));
+    }
+
+    @Test
+    public void registradosConSesionMuestraMenuDelUsuarioYListadoCompleto() throws Exception {
+        UsuarioData usuario = new UsuarioData();
+        usuario.setEmail("menu@ua.es");
+        usuario.setNombre("Usuario del menú");
+        usuario.setPassword("123");
+        usuario = usuarioService.registrar(usuario);
+
+        UsuarioData otro = new UsuarioData();
+        otro.setEmail("otro@ua.es");
+        otro.setPassword("456");
+        otro = usuarioService.registrar(otro);
+
+        MockHttpSession session = new MockHttpSession();
+        session.setAttribute("idUsuarioLogeado", usuario.getId());
+
+        mockMvc.perform(get("/registrados").session(session))
+                .andExpect(status().isOk())
+                .andExpect(view().name("listaUsuarios"))
+                .andExpect(content().string(containsString("<a class=\"navbar-brand\" href=\"/about\">ToDoList</a>")))
+                .andExpect(content().string(containsString("href=\"/usuarios/" + usuario.getId() + "/tareas\">Tareas</a>")))
+                .andExpect(content().string(containsString(">Usuario del menú</button>")))
+                .andExpect(content().string(containsString(">Cuenta</span>")))
+                .andExpect(content().string(containsString("href=\"/logout\">Cerrar sesión Usuario del menú</a>")))
+                .andExpect(content().string(not(containsString("href=\"/login\""))))
+                .andExpect(content().string(not(containsString("href=\"/registro\""))))
+                .andExpect(content().string(containsString("src=\"/js/bootstrap.min.js\"")))
+                .andExpect(content().string(matchesPattern("(?s).*<tr>\\s*<td>" + usuario.getId()
+                        + "</td>\\s*<td>menu@ua[.]es</td>\\s*</tr>.*")))
+                .andExpect(content().string(matchesPattern("(?s).*<tr>\\s*<td>" + otro.getId()
+                        + "</td>\\s*<td>otro@ua[.]es</td>\\s*</tr>.*")));
+    }
+
+    @Test
+    public void registradosConUsuarioDeSesionInexistenteMuestraMenuVisitante() throws Exception {
+        MockHttpSession session = new MockHttpSession();
+        session.setAttribute("idUsuarioLogeado", Long.MAX_VALUE);
+
+        mockMvc.perform(get("/registrados").session(session))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("<a class=\"nav-link\" href=\"/login\">Login</a>")))
+                .andExpect(content().string(containsString("<a class=\"nav-link\" href=\"/registro\">Registro</a>")))
+                .andExpect(content().string(not(containsString("href=\"/logout\""))))
+                .andExpect(content().string(containsString("No hay usuarios registrados.")));
     }
 
     @Test
