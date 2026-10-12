@@ -537,3 +537,34 @@ Validación: `./mvnw test`.
 Resultado: **65 pruebas ejecutadas, 0 fallos, 0 errores y 0 omitidas**
 (`BUILD SUCCESS`). `git diff --check` también pasa sin incidencias.
 Estas pruebas necesitan permiso para abrir el puerto local de Tomcat.
+
+## 007 Administrador: bloqueo del acceso a usuarios
+
+La [issue #8](https://github.com/isfs2-ua/mads-todolist/issues/8) solicita
+añadir botones para bloquear o habilitar usuarios desde el listado y mostrar
+un error de login cuando una cuenta bloqueada intente acceder.
+
+### Primer incremento: estado de bloqueo y servicio
+
+`Usuario` y `UsuarioData` incorporan la propiedad booleana `bloqueado`, con
+valor `false` por defecto. ModelMapper traslada ese estado al DTO en las consultas
+existentes. Los usuarios nuevos se crean habilitados.
+
+`UsuarioService.cambiarBloqueo(usuarioId, bloqueado)` busca la entidad y cambia
+su estado dentro de una transacción. JPA persiste el cambio al completar la
+transacción; el método devuelve el DTO actualizado. Si el usuario no existe,
+lanza `UsuarioServiceException` con el mensaje «El usuario no existe».
+
+Dos pruebas de servicio verifican el estado inicial, el bloqueo persistido en
+las consultas por identificador, correo y listado, y la habilitación posterior.
+Comprueban que otro usuario conserva su estado y que el cambio no altera los
+datos de la cuenta. También cubren ambos cambios sobre un identificador
+inexistente, sin crear usuarios.
+
+Validación: `./mvnw -Dtest=UsuarioServiceTest,UsuarioTest test`.
+Resultado: **19 pruebas ejecutadas, 0 fallos, 0 errores y 0 omitidas**
+(`BUILD SUCCESS`). `git diff --check` también pasa sin incidencias.
+
+Este incremento prepara la persistencia y el servicio. Los endpoints con
+comprobación de administrador, los botones del listado y el rechazo del login
+de una cuenta bloqueada quedan para los siguientes pasos.

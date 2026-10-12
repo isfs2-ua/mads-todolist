@@ -25,6 +25,7 @@ public class Usuario implements Serializable {
     // La restricción única impide dos administradores incluso con altas simultáneas.
     @Column(unique = true)
     private Boolean administrador;
+    private boolean bloqueado;
     @Column(name = "fecha_nacimiento")
     @Temporal(TemporalType.DATE)
     private Date fechaNacimiento;
@@ -83,6 +84,14 @@ public class Usuario implements Serializable {
 
     public void setAdministrador(boolean administrador) {
         this.administrador = administrador ? Boolean.TRUE : null;
+    }
+
+    public boolean isBloqueado() {
+        return bloqueado;
+    }
+
+    public void setBloqueado(boolean bloqueado) {
+        this.bloqueado = bloqueado;
     }
 
     public Date getFechaNacimiento() {

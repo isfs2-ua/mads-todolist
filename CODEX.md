@@ -24,15 +24,21 @@ que aparecen más abajo:
   o con una sesión de usuario inexistente devuelve HTTP 401 y el motivo
   «No autorizado: se necesita permiso de administrador». En la ficha se comprueban
   los permisos antes de buscar el usuario solicitado; un administrador recibe
-  HTTP 404 si la ficha no existe. El bloqueo de usuarios queda para #8.
+  HTTP 404 si la ficha no existe.
+- El primer incremento de #8, en `bloqueo-usuarios`, añade `bloqueado` a `Usuario`
+  y `UsuarioData`, inicialmente `false`, y el método transaccional
+  `UsuarioService.cambiarBloqueo(usuarioId, bloqueado)`. Los endpoints con permisos,
+  los botones y el rechazo del login bloqueado quedan para los siguientes pasos.
+  Validación de este incremento: **19 pruebas de servicio y repositorio superadas**.
 - `PaginaErrorResolver` selecciona `error.html` para las respuestas HTML de
   error. La plantilla usa Bootstrap y muestra código HTTP, título en español,
   motivo y enlaces a login y about. Conserva los motivos de los errores 4xx;
   los fallos internos muestran un mensaje genérico. `PaginaErrorWebTest`
   comprueba las páginas HTTP 401 y 404 con un servidor en un puerto aleatorio
   y el mensaje genérico de HTTP 500 en el resolver.
-- `doc/practica2.md` documenta los incrementos y sus pruebas. La suite completa
-  pasa con **65 pruebas, sin fallos ni errores**; `git diff --check` también pasa.
+- `doc/practica2.md` documenta los incrementos y sus pruebas. La última ejecución
+  de la suite completa, anterior al primer incremento de #8, pasó con **65 pruebas,
+  sin fallos ni errores**; `git diff --check` también pasa en el incremento actual.
 
 ## 1. Propósito y fuentes
 

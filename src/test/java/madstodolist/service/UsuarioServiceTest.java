@@ -32,6 +32,41 @@ public class UsuarioServiceTest {
     }
 
     @Test
+    public void bloqueoSePersisteYPermiteHabilitarDeNuevoSinAfectarAOtrosUsuarios() {
+        Long usuarioId = addUsuarioBD();
+        UsuarioData otro = new UsuarioData();
+        otro.setEmail("otro@ua.es");
+        otro.setPassword("456");
+        otro = usuarioService.registrar(otro);
+        assertThat(otro.isBloqueado()).isFalse();
+        assertThat(usuarioService.findById(usuarioId).isBloqueado()).isFalse();
+
+        assertThat(usuarioService.cambiarBloqueo(usuarioId, true).isBloqueado()).isTrue();
+        assertThat(usuarioService.findById(usuarioId).isBloqueado()).isTrue();
+        assertThat(usuarioService.findByEmail("user@ua").isBloqueado()).isTrue();
+        assertThat(usuarioService.findAll()).extracting("id", "bloqueado")
+                .containsExactlyInAnyOrder(tuple(usuarioId, true), tuple(otro.getId(), false));
+
+        assertThat(usuarioService.cambiarBloqueo(usuarioId, false).isBloqueado()).isFalse();
+        UsuarioData habilitado = usuarioService.findById(usuarioId);
+        assertThat(habilitado.isBloqueado()).isFalse();
+        assertThat(habilitado.getEmail()).isEqualTo("user@ua");
+        assertThat(habilitado.getNombre()).isEqualTo("Usuario Ejemplo");
+        assertThat(habilitado.getPassword()).isEqualTo("123");
+        assertThat(usuarioService.findById(otro.getId()).isBloqueado()).isFalse();
+    }
+
+    @Test
+    public void cambiarBloqueoDeUsuarioInexistenteDevuelveErrorSinCrearUsuarios() {
+        for (boolean bloqueado : new boolean[]{true, false}) {
+            assertThatThrownBy(() -> usuarioService.cambiarBloqueo(Long.MAX_VALUE, bloqueado))
+                    .isInstanceOf(UsuarioServiceException.class)
+                    .hasMessage("El usuario no existe");
+        }
+        assertThat(usuarioService.findAll()).isEmpty();
+    }
+
+    @Test
     public void registroAdministradorPersisteRolYPermiteUsuariosNormales() {
         assertThat(usuarioService.existeAdministrador()).isFalse();
         Long usuarioId = addUsuarioBD();

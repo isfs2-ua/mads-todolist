@@ -72,6 +72,14 @@ public class UsuarioService {
         return usuarioRepository.existsByAdministradorTrue();
     }
 
+    @Transactional
+    public UsuarioData cambiarBloqueo(Long usuarioId, boolean bloqueado) {
+        Usuario usuario = usuarioRepository.findById(usuarioId)
+                .orElseThrow(() -> new UsuarioServiceException("El usuario no existe"));
+        usuario.setBloqueado(bloqueado);
+        return modelMapper.map(usuario, UsuarioData.class);
+    }
+
     @Transactional(readOnly = true)
     public UsuarioData findByEmail(String email) {
         Usuario usuario = usuarioRepository.findByEmail(email).orElse(null);
