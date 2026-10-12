@@ -17,6 +17,11 @@ que aparecen más abajo:
 - `/registro` ofrece el checkbox sólo mientras no exista un administrador,
   también al volver a mostrar el formulario con errores. Un POST directo para
   crear otro administrador vuelve al formulario con un error de negocio.
+- Tras un registro correcto se inicia sesión automáticamente con el DTO
+  persistido. `LoginController.iniciarSesion()` se comparte con el login:
+  administrador a `/registrados` y usuario normal a sus tareas. Los errores de
+  registro no abren una sesión autenticada. Esta mejora pasa **17 pruebas de
+  registro, login y bloqueo**.
 - Tras el login, el administrador va a `/registrados` y el usuario normal a
   sus tareas. En los dos incrementos de #7, la rama `proteccion-usuarios`
   restringe `/registrados` y `/registrados/{id}` al administrador mediante
@@ -46,8 +51,9 @@ que aparecen más abajo:
   los fallos internos muestran un mensaje genérico. `PaginaErrorWebTest`
   comprueba las páginas HTTP 401 y 404 con un servidor en un puerto aleatorio
   y el mensaje genérico de HTTP 500 en el resolver.
-- `doc/practica2.md` documenta los incrementos y sus pruebas. La suite completa
-  pasa con **73 pruebas, sin fallos ni errores**; `git diff --check` también pasa.
+- `doc/practica2.md` documenta los incrementos y sus pruebas. La última ejecución
+  de la suite completa, anterior a la mejora de sesión automática tras el registro,
+  pasó con **73 pruebas, sin fallos ni errores**; `git diff --check` también pasa.
 
 ## 1. Propósito y fuentes
 
@@ -134,7 +140,7 @@ Las pruebas usan `jdbc:h2:mem:test`, esquema `create` y no activan el perfil `de
 | --- | --- | --- |
 | GET | `/` | Redirige a `/login`. |
 | GET / POST | `/login` | Muestra formulario / comprueba credenciales y abre sesión. |
-| GET / POST | `/registro` | Muestra formulario / registra un usuario y redirige a login. |
+| GET / POST | `/registro` | Muestra formulario / registra, inicia sesión y redirige según el rol. |
 | GET | `/logout` | Elimina el identificador de usuario de la sesión y redirige a login. |
 | GET | `/about` | Página pública «Acerca de». |
 | GET | `/usuarios/{id}/tareas` | Lista tareas del usuario. |
@@ -142,7 +148,7 @@ Las pruebas usan `jdbc:h2:mem:test`, esquema `create` y no activan el perfil `de
 | GET / POST | `/tareas/{id}/editar` | Formulario / modificación del título. |
 | DELETE | `/tareas/{id}` | Borra una tarea; responde con cuerpo vacío. |
 
-`ManagerUserSession` almacena `idUsuarioLogeado` en `HttpSession`. El login correcto redirige actualmente a `/usuarios/{id}/tareas`; el registro no inicia sesión automáticamente. No se usa Spring Security.
+`ManagerUserSession` almacena `idUsuarioLogeado` en `HttpSession`. El login y el registro correctos inician sesión y redirigen a `/usuarios/{id}/tareas` para usuarios normales o a `/registrados` para el administrador. No se usa Spring Security.
 
 `TareaController` compara el usuario de la sesión con el propietario del recurso. Para edición y borrado, obtiene primero la tarea y su propietario. El acceso sin autorización lanza `UsuarioNoLogeadoException` (**HTTP 401**); una tarea inexistente lanza `TareaNotFoundException` (**HTTP 404**). Mantener estas comprobaciones al modificar los flujos de tareas.
 

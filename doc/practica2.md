@@ -410,7 +410,9 @@ administrador, el servicio lo rechaza. El controller captura
 `UsuarioServiceException`, muestra «Ya existe un usuario administrador» y
 actualiza la disponibilidad del checkbox. Esta comprobación también cubre el
 caso de que otro usuario se registre como administrador después de abrir el
-formulario. Un registro correcto redirige a `/login`, sin iniciar sesión.
+formulario. En la implementación inicial, un registro correcto redirigía a
+`/login`, sin iniciar sesión. La mejora de sesión automática documentada al
+final de este archivo sustituye ese comportamiento.
 
 ### Login y ejemplo de uso
 
@@ -421,8 +423,10 @@ rol del usuario recuperado de la base de datos: si `isAdministrador()` devuelve
 redirección a `/usuarios/{id}/tareas`. El rol no procede del formulario de login.
 
 Por ejemplo, el primer usuario marca «Registrarse como administrador» y completa
-el alta. La aplicación lo lleva al login. Al introducir sus credenciales,
-accede al listado de usuarios registrados. Desde ese momento, el formulario
+el alta. En el flujo inicial, la aplicación lo llevaba al login y, tras
+introducir sus credenciales, accedía al listado de usuarios registrados.
+Con la mejora posterior, accede directamente al listado tras el alta.
+Desde ese momento, el formulario
 de registro deja de ofrecer el checkbox, pero permite seguir dando de alta
 usuarios normales. Una contraseña incorrecta muestra el error de login y no
 abre una nueva sesión.
@@ -636,3 +640,28 @@ Resultado: **73 pruebas ejecutadas, 0 fallos, 0 errores y 0 omitidas**
 Con este incremento se completa la funcionalidad de la issue #8: el administrador
 puede bloquear o habilitar usuarios desde el listado y las cuentas bloqueadas
 reciben un mensaje explicativo al intentar iniciar sesión.
+
+## Mejora: sesión automática tras el registro
+
+Después de un alta correcta, `LoginController` utiliza el DTO devuelto por
+`UsuarioService.registrar()`, que contiene el identificador persistido, e inicia
+sesión mediante `ManagerUserSession`. El método privado `iniciarSesion()` se
+comparte con el login para mantener el mismo destino: `/registrados` para el
+administrador y `/usuarios/{id}/tareas` para el usuario normal. Así, el usuario
+puede empezar a utilizar la aplicación sin volver a introducir sus credenciales.
+
+Las pruebas de `AdministradorWebTest` comprueban el identificador guardado en
+sesión, la redirección y el acceso inmediato a la página de destino tras registrar
+un administrador o un usuario normal. El alta normal se verifica tanto con un
+administrador existente como sin él. También se comprueba que un error de
+validación, un correo repetido o el intento de crear un segundo administrador
+no abren una sesión autenticada.
+
+Validación:
+
+```bash
+./mvnw -Dtest=AdministradorWebTest,UsuarioWebTest,BloqueoUsuariosWebTest test
+```
+
+Resultado: **17 pruebas ejecutadas, 0 fallos, 0 errores y 0 omitidas**
+(`BUILD SUCCESS`). `git diff --check` también pasa sin incidencias.
