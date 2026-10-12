@@ -601,3 +601,38 @@ Resultado: **20 pruebas ejecutadas, 0 fallos, 0 errores y 0 omitidas**
 (`BUILD SUCCESS`). `git diff --check` también pasa sin incidencias.
 
 El rechazo del login de una cuenta bloqueada queda pendiente del siguiente paso.
+
+### Tercer incremento: rechazo del login bloqueado
+
+`UsuarioService.LoginStatus` incorpora `USER_BLOCKED`. El servicio comprueba
+primero la existencia del usuario y la contraseña; cuando las credenciales
+son correctas, una cuenta bloqueada devuelve ese estado en lugar de `LOGIN_OK`.
+Los errores de usuario inexistente o contraseña incorrecta conservan su resultado.
+
+`LoginController` responde a `USER_BLOCKED` mostrando de nuevo `formLogin`, con
+HTTP 200 y «Tu cuenta está bloqueada. Contacta con el administrador.». La plantilla
+ya dispone de una alerta para el atributo `error`, por lo que se reutiliza sin
+modificarla. Este resultado no establece una sesión autenticada ni redirige a
+las tareas. Después de habilitar la cuenta, sus credenciales vuelven a permitir
+el acceso habitual.
+
+Una prueba de servicio cubre el login antes del bloqueo, durante el bloqueo y
+tras habilitar la cuenta, junto con los errores de credenciales. La nueva prueba
+de `BloqueoUsuariosWebTest` recorre el flujo con el servicio real: el administrador
+bloquea mediante POST, el usuario intenta acceder y recibe el mensaje sin obtener
+un identificador autenticado en sesión. Tras habilitarlo, el login redirige a sus
+tareas y guarda su identificador en sesión.
+
+Ejemplo: el administrador pulsa «Bloquear» en la fila de un usuario; el botón
+pasa a «Habilitar». Si ese usuario intenta iniciar sesión con su contraseña,
+ve el mensaje de cuenta bloqueada. Al pulsar «Habilitar», el administrador
+restablece la posibilidad de iniciar sesión. El bloqueo afecta a los intentos
+de login; las sesiones que ya estaban abiertas no se invalidan en esta historia.
+
+Validación final: `./mvnw test`.
+Resultado: **73 pruebas ejecutadas, 0 fallos, 0 errores y 0 omitidas**
+(`BUILD SUCCESS`). `git diff --check` también pasa sin incidencias.
+
+Con este incremento se completa la funcionalidad de la issue #8: el administrador
+puede bloquear o habilitar usuarios desde el listado y las cuentas bloqueadas
+reciben un mensaje explicativo al intentar iniciar sesión.

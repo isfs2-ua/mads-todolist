@@ -42,6 +42,32 @@ public class BloqueoUsuariosWebTest {
     }
 
     @Test
+    public void loginBloqueadoMuestraErrorSinAbrirSesionYFuncionaTrasHabilitarlo() throws Exception {
+        UsuarioData admin = registrar("admin@ua.es", true);
+        UsuarioData normal = registrar("normal@ua.es", false);
+        MockHttpSession sessionAdmin = sesion(admin.getId());
+        MockHttpSession sessionUsuario = new MockHttpSession();
+        String ruta = "/registrados/" + normal.getId() + "/bloqueo";
+
+        mockMvc.perform(post(ruta).session(sessionAdmin).param("bloqueado", "true"))
+                .andExpect(status().is3xxRedirection());
+        mockMvc.perform(post("/login").session(sessionUsuario)
+                        .param("eMail", normal.getEmail()).param("password", "123"))
+                .andExpect(status().isOk())
+                .andExpect(view().name("formLogin"))
+                .andExpect(content().string(containsString("Tu cuenta está bloqueada. Contacta con el administrador.")));
+        assertThat(sessionUsuario.getAttribute("idUsuarioLogeado")).isNull();
+
+        mockMvc.perform(post(ruta).session(sessionAdmin).param("bloqueado", "false"))
+                .andExpect(status().is3xxRedirection());
+        mockMvc.perform(post("/login").session(sessionUsuario)
+                        .param("eMail", normal.getEmail()).param("password", "123"))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/usuarios/" + normal.getId() + "/tareas"));
+        assertThat(sessionUsuario.getAttribute("idUsuarioLogeado")).isEqualTo(normal.getId());
+    }
+
+    @Test
     public void administradorBloqueaYHabilitaDesdeElListado() throws Exception {
         UsuarioData admin = registrar("admin@ua.es", true);
         UsuarioData normal = registrar("normal@ua.es", false);

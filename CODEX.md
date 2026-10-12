@@ -33,18 +33,21 @@ que aparecen más abajo:
   parámetro booleano `bloqueado`, y botones «Bloquear»/«Habilitar» en el listado.
   El endpoint comprueba administrador y existencia antes de cambiar el estado,
   y redirige al listado. No se ofrece bloqueo para el administrador y un POST
-  directo para bloquearlo devuelve HTTP 400. El rechazo del login bloqueado
-  queda pendiente del siguiente paso.
+  directo para bloquearlo devuelve HTTP 400.
   Validación: **20 pruebas de bloqueo web, listado y servicio superadas**.
+- El tercer incremento de #8 añade `UsuarioService.LoginStatus.USER_BLOCKED`:
+  tras verificar las credenciales, una cuenta bloqueada no inicia sesión.
+  `LoginController` muestra «Tu cuenta está bloqueada. Contacta con el
+  administrador.» en el formulario existente. Habilitar la cuenta permite
+  acceder de nuevo. Las sesiones previamente abiertas no se invalidan.
 - `PaginaErrorResolver` selecciona `error.html` para las respuestas HTML de
   error. La plantilla usa Bootstrap y muestra código HTTP, título en español,
   motivo y enlaces a login y about. Conserva los motivos de los errores 4xx;
   los fallos internos muestran un mensaje genérico. `PaginaErrorWebTest`
   comprueba las páginas HTTP 401 y 404 con un servidor en un puerto aleatorio
   y el mensaje genérico de HTTP 500 en el resolver.
-- `doc/practica2.md` documenta los incrementos y sus pruebas. La última ejecución
-  de la suite completa, anterior al primer incremento de #8, pasó con **65 pruebas,
-  sin fallos ni errores**; `git diff --check` también pasa en el incremento actual.
+- `doc/practica2.md` documenta los incrementos y sus pruebas. La suite completa
+  pasa con **73 pruebas, sin fallos ni errores**; `git diff --check` también pasa.
 
 ## 1. Propósito y fuentes
 

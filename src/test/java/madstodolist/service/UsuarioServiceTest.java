@@ -67,6 +67,20 @@ public class UsuarioServiceTest {
     }
 
     @Test
+    public void loginRechazaUsuarioBloqueadoYPermiteAccesoTrasHabilitarlo() {
+        Long usuarioId = addUsuarioBD();
+        assertThat(usuarioService.login("user@ua", "123")).isEqualTo(UsuarioService.LoginStatus.LOGIN_OK);
+
+        usuarioService.cambiarBloqueo(usuarioId, true);
+        assertThat(usuarioService.login("user@ua", "123")).isEqualTo(UsuarioService.LoginStatus.USER_BLOCKED);
+        assertThat(usuarioService.login("user@ua", "incorrecta")).isEqualTo(UsuarioService.LoginStatus.ERROR_PASSWORD);
+        assertThat(usuarioService.login("inexistente@ua.es", "123")).isEqualTo(UsuarioService.LoginStatus.USER_NOT_FOUND);
+
+        usuarioService.cambiarBloqueo(usuarioId, false);
+        assertThat(usuarioService.login("user@ua", "123")).isEqualTo(UsuarioService.LoginStatus.LOGIN_OK);
+    }
+
+    @Test
     public void registroAdministradorPersisteRolYPermiteUsuariosNormales() {
         assertThat(usuarioService.existeAdministrador()).isFalse();
         Long usuarioId = addUsuarioBD();
