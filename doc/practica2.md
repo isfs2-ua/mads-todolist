@@ -457,3 +457,31 @@ Resultado: **60 pruebas ejecutadas, 0 fallos, 0 errores y 0 omitidas**
 Con este cambio se completa la funcionalidad de la issue #6. La restricción
 de acceso al listado y a las fichas corresponde a la siguiente historia,
 «006 Protección de usuarios» (issue #7).
+
+## 006 Protección del listado y la descripción de usuario
+
+La [issue #7](https://github.com/isfs2-ua/mads-todolist/issues/7) solicita
+restringir ambas páginas al administrador y devolver HTTP 401 («No autorizado»)
+con un mensaje de permisos a quienes intenten acceder sin autorización.
+
+### Primer incremento: protección del listado
+
+`UsuarioController.listadoUsuarios` recupera al usuario de la sesión y comprueba
+que existe y que `isAdministrador()` es verdadero antes de consultar el listado.
+Si no se cumple, lanza `UsuarioNoAdministradorException`. Esta excepción sigue
+el patrón de las páginas de tareas mediante `@ResponseStatus`: devuelve HTTP
+401 con el motivo «No autorizado: se necesita permiso de administrador».
+
+`ListadoUsuariosWebTest` adapta las pruebas al nuevo requisito. Comprueba el
+rechazo sin sesión, con un usuario normal y con un identificador de sesión
+inexistente. El caso autorizado utiliza un administrador y conserva las
+comprobaciones del menú, las columnas y las filas con enlaces a las fichas.
+El listado vacío deja de ser un caso accesible: el administrador que permite
+entrar necesariamente forma parte de los usuarios registrados.
+
+Validación: `./mvnw test`.
+Resultado: **60 pruebas ejecutadas, 0 fallos, 0 errores y 0 omitidas**
+(`BUILD SUCCESS`). `git diff --check` también pasa sin incidencias.
+
+Este incremento protege únicamente `/registrados`. La protección de
+`/registrados/{id}` queda pendiente del siguiente paso.

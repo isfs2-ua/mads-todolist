@@ -18,8 +18,12 @@ que aparecen más abajo:
   también al volver a mostrar el formulario con errores. Un POST directo para
   crear otro administrador vuelve al formulario con un error de negocio.
 - Tras el login, el administrador va a `/registrados` y el usuario normal a
-  sus tareas. La protección del listado y de la descripción queda para #7;
-  el bloqueo de usuarios, para #8.
+  sus tareas. En el primer incremento de #7, la rama `proteccion-usuarios`
+  restringe `/registrados` al administrador: sin sesión, con un usuario normal
+  o con una sesión de usuario inexistente devuelve HTTP 401 y el motivo
+  «No autorizado: se necesita permiso de administrador». La protección de
+  `/registrados/{id}` queda pendiente del siguiente incremento; el bloqueo de
+  usuarios, para #8.
 - `doc/practica2.md` documenta los incrementos y sus pruebas. La suite completa
   pasa con **60 pruebas, sin fallos ni errores**; `git diff --check` también pasa.
 

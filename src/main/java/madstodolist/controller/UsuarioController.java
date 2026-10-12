@@ -1,6 +1,7 @@
 package madstodolist.controller;
 
 import madstodolist.authentication.ManagerUserSession;
+import madstodolist.controller.exception.UsuarioNoAdministradorException;
 import madstodolist.controller.exception.UsuarioNotFoundException;
 import madstodolist.dto.UsuarioData;
 import madstodolist.service.UsuarioService;
@@ -23,6 +24,9 @@ public class UsuarioController {
     public String listadoUsuarios(Model model) {
         Long idUsuario = managerUserSession.usuarioLogeado();
         UsuarioData usuario = idUsuario != null ? usuarioService.findById(idUsuario) : null;
+        if (usuario == null || !usuario.isAdministrador()) {
+            throw new UsuarioNoAdministradorException();
+        }
         model.addAttribute("usuario", usuario);
         model.addAttribute("usuarios", usuarioService.findAll());
         return "listaUsuarios";
