@@ -85,20 +85,25 @@ public class AdministradorWebTest {
 
     @Test
     public void formularioOfreceAdministradorHastaSuRegistro() throws Exception {
+        MockHttpSession session = new MockHttpSession();
         mockMvc.perform(get("/registro"))
                 .andExpect(status().isOk())
                 .andExpect(content().string(containsString("type=\"checkbox\"")))
                 .andExpect(content().string(containsString("name=\"administrador\"")));
 
-        mockMvc.perform(post("/registro")
+        mockMvc.perform(post("/registro").session(session)
                         .param("email", "admin@ua.es")
                         .param("password", "123")
                         .param("nombre", "Administrador")
                         .param("administrador", "true"))
                 .andExpect(status().is3xxRedirection())
-                .andExpect(redirectedUrl("/login"));
+                .andExpect(redirectedUrl("/registrados"));
 
         assertThat(usuarioService.findByEmail("admin@ua.es").isAdministrador()).isTrue();
+        assertThat(session.getAttribute("idUsuarioLogeado"))
+                .isEqualTo(usuarioService.findByEmail("admin@ua.es").getId());
+        mockMvc.perform(get("/registrados").session(session))
+                .andExpect(status().isOk());
         mockMvc.perform(get("/registro"))
                 .andExpect(status().isOk())
                 .andExpect(content().string(not(containsString("name=\"administrador\""))));
@@ -107,19 +112,35 @@ public class AdministradorWebTest {
     @Test
     public void altaNormalSinCheckboxSigueDisponibleConAdministrador() throws Exception {
         registrarAdministrador();
-        mockMvc.perform(post("/registro")
+        comprobarRegistroNormalIniciaSesion();
+        assertThat(usuarioService.findAll()).hasSize(2);
+    }
+
+    @Test
+    public void altaNormalSinAdministradorIniciaSesion() throws Exception {
+        comprobarRegistroNormalIniciaSesion();
+        assertThat(usuarioService.existeAdministrador()).isFalse();
+    }
+
+    private void comprobarRegistroNormalIniciaSesion() throws Exception {
+        MockHttpSession session = new MockHttpSession();
+        mockMvc.perform(post("/registro").session(session)
                         .param("email", "normal@ua.es")
                         .param("password", "456"))
                 .andExpect(status().is3xxRedirection())
-                .andExpect(redirectedUrl("/login"));
-        assertThat(usuarioService.findByEmail("normal@ua.es").isAdministrador()).isFalse();
-        assertThat(usuarioService.findAll()).hasSize(2);
+                .andExpect(redirectedUrl("/usuarios/" + usuarioService.findByEmail("normal@ua.es").getId() + "/tareas"));
+        UsuarioData registrado = usuarioService.findByEmail("normal@ua.es");
+        assertThat(registrado.isAdministrador()).isFalse();
+        assertThat(session.getAttribute("idUsuarioLogeado")).isEqualTo(registrado.getId());
+        mockMvc.perform(get("/usuarios/" + registrado.getId() + "/tareas").session(session))
+                .andExpect(status().isOk());
     }
 
     @Test
     public void altaDirectaDeSegundoAdministradorDevuelveErrorSinCrearlo() throws Exception {
         registrarAdministrador();
-        mockMvc.perform(post("/registro")
+        MockHttpSession session = new MockHttpSession();
+        mockMvc.perform(post("/registro").session(session)
                         .param("email", "otro.admin@ua.es")
                         .param("password", "456")
                         .param("administrador", "true"))
@@ -129,11 +150,13 @@ public class AdministradorWebTest {
                 .andExpect(content().string(not(containsString("name=\"administrador\""))));
         assertThat(usuarioService.findByEmail("otro.admin@ua.es")).isNull();
         assertThat(usuarioService.findAll()).hasSize(1);
+        assertThat(session.getAttribute("idUsuarioLogeado")).isNull();
     }
 
     @Test
     public void errorDeValidacionMantieneCheckboxCuandoNoHayAdministrador() throws Exception {
-        mockMvc.perform(post("/registro")
+        MockHttpSession session = new MockHttpSession();
+        mockMvc.perform(post("/registro").session(session)
                         .param("email", "correo-invalido")
                         .param("password", "123")
                         .param("administrador", "true"))
@@ -143,24 +166,27 @@ public class AdministradorWebTest {
                 .andExpect(content().string(containsString("name=\"administrador\"")))
                 .andExpect(content().string(containsString("checked=\"checked\"")));
         assertThat(usuarioService.findAll()).isEmpty();
+        assertThat(session.getAttribute("idUsuarioLogeado")).isNull();
     }
 
     @Test
     public void erroresDeValidacionYCorreoRepetidoOcultanCheckboxSiYaHayAdministrador() throws Exception {
         registrarAdministrador();
-        mockMvc.perform(post("/registro")
+        MockHttpSession session = new MockHttpSession();
+        mockMvc.perform(post("/registro").session(session)
                         .param("email", "correo-invalido")
                         .param("password", "123"))
                 .andExpect(status().isOk())
                 .andExpect(model().attributeHasFieldErrors("registroData", "eMail"))
                 .andExpect(content().string(not(containsString("name=\"administrador\""))));
 
-        mockMvc.perform(post("/registro")
+        mockMvc.perform(post("/registro").session(session)
                         .param("email", "admin@ua.es")
                         .param("password", "123"))
                 .andExpect(status().isOk())
                 .andExpect(content().string(containsString("El usuario admin@ua.es ya existe")))
                 .andExpect(content().string(not(containsString("name=\"administrador\""))));
         assertThat(usuarioService.findAll()).hasSize(1);
+        assertThat(session.getAttribute("idUsuarioLogeado")).isNull();
     }
 }

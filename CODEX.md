@@ -17,6 +17,11 @@ que aparecen más abajo:
 - `/registro` ofrece el checkbox sólo mientras no exista un administrador,
   también al volver a mostrar el formulario con errores. Un POST directo para
   crear otro administrador vuelve al formulario con un error de negocio.
+- Tras un registro correcto se inicia sesión automáticamente con el DTO
+  persistido. `LoginController.iniciarSesion()` se comparte con el login:
+  administrador a `/registrados` y usuario normal a sus tareas. Los errores de
+  registro no abren una sesión autenticada. Esta mejora pasa **17 pruebas de
+  registro, login y bloqueo**.
 - Tras el login, el administrador va a `/registrados` y el usuario normal a
   sus tareas. En los dos incrementos de #7, la rama `proteccion-usuarios`
   restringe `/registrados` y `/registrados/{id}` al administrador mediante
@@ -24,15 +29,31 @@ que aparecen más abajo:
   o con una sesión de usuario inexistente devuelve HTTP 401 y el motivo
   «No autorizado: se necesita permiso de administrador». En la ficha se comprueban
   los permisos antes de buscar el usuario solicitado; un administrador recibe
-  HTTP 404 si la ficha no existe. El bloqueo de usuarios queda para #8.
+  HTTP 404 si la ficha no existe.
+- El primer incremento de #8, en `bloqueo-usuarios`, añade `bloqueado` a `Usuario`
+  y `UsuarioData`, inicialmente `false`, y el método transaccional
+  `UsuarioService.cambiarBloqueo(usuarioId, bloqueado)`.
+  Validación de este incremento: **19 pruebas de servicio y repositorio superadas**.
+- El segundo incremento de #8 añade POST `/registrados/{id}/bloqueo`, con el
+  parámetro booleano `bloqueado`, y botones «Bloquear»/«Habilitar» en el listado.
+  El endpoint comprueba administrador y existencia antes de cambiar el estado,
+  y redirige al listado. No se ofrece bloqueo para el administrador y un POST
+  directo para bloquearlo devuelve HTTP 400.
+  Validación: **20 pruebas de bloqueo web, listado y servicio superadas**.
+- El tercer incremento de #8 añade `UsuarioService.LoginStatus.USER_BLOCKED`:
+  tras verificar las credenciales, una cuenta bloqueada no inicia sesión.
+  `LoginController` muestra «Tu cuenta está bloqueada. Contacta con el
+  administrador.» en el formulario existente. Habilitar la cuenta permite
+  acceder de nuevo. Las sesiones previamente abiertas no se invalidan.
 - `PaginaErrorResolver` selecciona `error.html` para las respuestas HTML de
   error. La plantilla usa Bootstrap y muestra código HTTP, título en español,
   motivo y enlaces a login y about. Conserva los motivos de los errores 4xx;
   los fallos internos muestran un mensaje genérico. `PaginaErrorWebTest`
   comprueba las páginas HTTP 401 y 404 con un servidor en un puerto aleatorio
   y el mensaje genérico de HTTP 500 en el resolver.
-- `doc/practica2.md` documenta los incrementos y sus pruebas. La suite completa
-  pasa con **65 pruebas, sin fallos ni errores**; `git diff --check` también pasa.
+- `doc/practica2.md` documenta los incrementos y sus pruebas. La última ejecución
+  de la suite completa, anterior a la mejora de sesión automática tras el registro,
+  pasó con **73 pruebas, sin fallos ni errores**; `git diff --check` también pasa.
 
 ## 1. Propósito y fuentes
 
@@ -119,7 +140,7 @@ Las pruebas usan `jdbc:h2:mem:test`, esquema `create` y no activan el perfil `de
 | --- | --- | --- |
 | GET | `/` | Redirige a `/login`. |
 | GET / POST | `/login` | Muestra formulario / comprueba credenciales y abre sesión. |
-| GET / POST | `/registro` | Muestra formulario / registra un usuario y redirige a login. |
+| GET / POST | `/registro` | Muestra formulario / registra, inicia sesión y redirige según el rol. |
 | GET | `/logout` | Elimina el identificador de usuario de la sesión y redirige a login. |
 | GET | `/about` | Página pública «Acerca de». |
 | GET | `/usuarios/{id}/tareas` | Lista tareas del usuario. |
@@ -127,7 +148,7 @@ Las pruebas usan `jdbc:h2:mem:test`, esquema `create` y no activan el perfil `de
 | GET / POST | `/tareas/{id}/editar` | Formulario / modificación del título. |
 | DELETE | `/tareas/{id}` | Borra una tarea; responde con cuerpo vacío. |
 
-`ManagerUserSession` almacena `idUsuarioLogeado` en `HttpSession`. El login correcto redirige actualmente a `/usuarios/{id}/tareas`; el registro no inicia sesión automáticamente. No se usa Spring Security.
+`ManagerUserSession` almacena `idUsuarioLogeado` en `HttpSession`. El login y el registro correctos inician sesión y redirigen a `/usuarios/{id}/tareas` para usuarios normales o a `/registrados` para el administrador. No se usa Spring Security.
 
 `TareaController` compara el usuario de la sesión con el propietario del recurso. Para edición y borrado, obtiene primero la tarea y su propietario. El acceso sin autorización lanza `UsuarioNoLogeadoException` (**HTTP 401**); una tarea inexistente lanza `TareaNotFoundException` (**HTTP 404**). Mantener estas comprobaciones al modificar los flujos de tareas.
 

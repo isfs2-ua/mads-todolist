@@ -11,6 +11,7 @@ public class UsuarioData {
     private String nombre;
     private String password;
     private boolean administrador;
+    private boolean bloqueado;
     private Date fechaNacimiento;
 
     // Getters y setters
@@ -49,6 +50,14 @@ public class UsuarioData {
 
     public void setAdministrador(boolean administrador) {
         this.administrador = administrador;
+    }
+
+    public boolean isBloqueado() {
+        return bloqueado;
+    }
+
+    public void setBloqueado(boolean bloqueado) {
+        this.bloqueado = bloqueado;
     }
 
     public Date getFechaNacimiento() {

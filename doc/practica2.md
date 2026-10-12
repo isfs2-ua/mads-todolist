@@ -410,7 +410,9 @@ administrador, el servicio lo rechaza. El controller captura
 `UsuarioServiceException`, muestra «Ya existe un usuario administrador» y
 actualiza la disponibilidad del checkbox. Esta comprobación también cubre el
 caso de que otro usuario se registre como administrador después de abrir el
-formulario. Un registro correcto redirige a `/login`, sin iniciar sesión.
+formulario. En la implementación inicial, un registro correcto redirigía a
+`/login`, sin iniciar sesión. La mejora de sesión automática documentada al
+final de este archivo sustituye ese comportamiento.
 
 ### Login y ejemplo de uso
 
@@ -421,8 +423,10 @@ rol del usuario recuperado de la base de datos: si `isAdministrador()` devuelve
 redirección a `/usuarios/{id}/tareas`. El rol no procede del formulario de login.
 
 Por ejemplo, el primer usuario marca «Registrarse como administrador» y completa
-el alta. La aplicación lo lleva al login. Al introducir sus credenciales,
-accede al listado de usuarios registrados. Desde ese momento, el formulario
+el alta. En el flujo inicial, la aplicación lo llevaba al login y, tras
+introducir sus credenciales, accedía al listado de usuarios registrados.
+Con la mejora posterior, accede directamente al listado tras el alta.
+Desde ese momento, el formulario
 de registro deja de ofrecer el checkbox, pero permite seguir dando de alta
 usuarios normales. Una contraseña incorrecta muestra el error de login y no
 abre una nueva sesión.
@@ -537,3 +541,127 @@ Validación: `./mvnw test`.
 Resultado: **65 pruebas ejecutadas, 0 fallos, 0 errores y 0 omitidas**
 (`BUILD SUCCESS`). `git diff --check` también pasa sin incidencias.
 Estas pruebas necesitan permiso para abrir el puerto local de Tomcat.
+
+## 007 Administrador: bloqueo del acceso a usuarios
+
+La [issue #8](https://github.com/isfs2-ua/mads-todolist/issues/8) solicita
+añadir botones para bloquear o habilitar usuarios desde el listado y mostrar
+un error de login cuando una cuenta bloqueada intente acceder.
+
+### Primer incremento: estado de bloqueo y servicio
+
+`Usuario` y `UsuarioData` incorporan la propiedad booleana `bloqueado`, con
+valor `false` por defecto. ModelMapper traslada ese estado al DTO en las consultas
+existentes. Los usuarios nuevos se crean habilitados.
+
+`UsuarioService.cambiarBloqueo(usuarioId, bloqueado)` busca la entidad y cambia
+su estado dentro de una transacción. JPA persiste el cambio al completar la
+transacción; el método devuelve el DTO actualizado. Si el usuario no existe,
+lanza `UsuarioServiceException` con el mensaje «El usuario no existe».
+
+Dos pruebas de servicio verifican el estado inicial, el bloqueo persistido en
+las consultas por identificador, correo y listado, y la habilitación posterior.
+Comprueban que otro usuario conserva su estado y que el cambio no altera los
+datos de la cuenta. También cubren ambos cambios sobre un identificador
+inexistente, sin crear usuarios.
+
+Validación: `./mvnw -Dtest=UsuarioServiceTest,UsuarioTest test`.
+Resultado: **19 pruebas ejecutadas, 0 fallos, 0 errores y 0 omitidas**
+(`BUILD SUCCESS`). `git diff --check` también pasa sin incidencias.
+
+Este incremento prepara la persistencia y el servicio. Los endpoints con
+comprobación de administrador, los botones del listado y el rechazo del login
+de una cuenta bloqueada quedan para los siguientes pasos.
+
+### Segundo incremento: botones y endpoint de bloqueo
+
+El listado incorpora un formulario POST por usuario normal. Envía a
+`/registrados/{id}/bloqueo` el parámetro booleano `bloqueado`, con el estado
+contrario al actual: «Bloquear» si está habilitado y «Habilitar» si está bloqueado.
+Los botones utilizan los estilos Bootstrap y comparten la celda con el enlace
+a la descripción.
+
+`UsuarioController.cambiarBloqueo` reutiliza `comprobarAdministrador()` antes de
+consultar la cuenta. Sin permisos devuelve HTTP 401; si el usuario solicitado
+no existe, HTTP 404. Tras llamar al servicio redirige a `/registrados`, donde el
+botón refleja el estado actualizado. El administrador no tiene botón de bloqueo:
+para evitar perder el único acceso de administración, un POST directo para
+bloquearlo también se rechaza con HTTP 400 y «No se puede bloquear al administrador».
+
+`BloqueoUsuariosWebTest` verifica el formulario, el cambio de ambos estados y la
+redirección, además de los POST sin sesión, con un usuario normal o con un
+identificador de sesión inexistente. En esos casos comprueba que el estado no
+cambia, tanto al intentar bloquear como habilitar. También cubre el usuario
+inexistente y el intento de bloqueo del administrador. La prueba del listado
+adapta su patrón de filas para admitir el formulario junto al enlace existente.
+
+Validación:
+
+```bash
+./mvnw -Dtest=BloqueoUsuariosWebTest,ListadoUsuariosWebTest,UsuarioServiceTest test
+```
+
+Resultado: **20 pruebas ejecutadas, 0 fallos, 0 errores y 0 omitidas**
+(`BUILD SUCCESS`). `git diff --check` también pasa sin incidencias.
+
+El rechazo del login de una cuenta bloqueada queda pendiente del siguiente paso.
+
+### Tercer incremento: rechazo del login bloqueado
+
+`UsuarioService.LoginStatus` incorpora `USER_BLOCKED`. El servicio comprueba
+primero la existencia del usuario y la contraseña; cuando las credenciales
+son correctas, una cuenta bloqueada devuelve ese estado en lugar de `LOGIN_OK`.
+Los errores de usuario inexistente o contraseña incorrecta conservan su resultado.
+
+`LoginController` responde a `USER_BLOCKED` mostrando de nuevo `formLogin`, con
+HTTP 200 y «Tu cuenta está bloqueada. Contacta con el administrador.». La plantilla
+ya dispone de una alerta para el atributo `error`, por lo que se reutiliza sin
+modificarla. Este resultado no establece una sesión autenticada ni redirige a
+las tareas. Después de habilitar la cuenta, sus credenciales vuelven a permitir
+el acceso habitual.
+
+Una prueba de servicio cubre el login antes del bloqueo, durante el bloqueo y
+tras habilitar la cuenta, junto con los errores de credenciales. La nueva prueba
+de `BloqueoUsuariosWebTest` recorre el flujo con el servicio real: el administrador
+bloquea mediante POST, el usuario intenta acceder y recibe el mensaje sin obtener
+un identificador autenticado en sesión. Tras habilitarlo, el login redirige a sus
+tareas y guarda su identificador en sesión.
+
+Ejemplo: el administrador pulsa «Bloquear» en la fila de un usuario; el botón
+pasa a «Habilitar». Si ese usuario intenta iniciar sesión con su contraseña,
+ve el mensaje de cuenta bloqueada. Al pulsar «Habilitar», el administrador
+restablece la posibilidad de iniciar sesión. El bloqueo afecta a los intentos
+de login; las sesiones que ya estaban abiertas no se invalidan en esta historia.
+
+Validación final: `./mvnw test`.
+Resultado: **73 pruebas ejecutadas, 0 fallos, 0 errores y 0 omitidas**
+(`BUILD SUCCESS`). `git diff --check` también pasa sin incidencias.
+
+Con este incremento se completa la funcionalidad de la issue #8: el administrador
+puede bloquear o habilitar usuarios desde el listado y las cuentas bloqueadas
+reciben un mensaje explicativo al intentar iniciar sesión.
+
+## Mejora: sesión automática tras el registro
+
+Después de un alta correcta, `LoginController` utiliza el DTO devuelto por
+`UsuarioService.registrar()`, que contiene el identificador persistido, e inicia
+sesión mediante `ManagerUserSession`. El método privado `iniciarSesion()` se
+comparte con el login para mantener el mismo destino: `/registrados` para el
+administrador y `/usuarios/{id}/tareas` para el usuario normal. Así, el usuario
+puede empezar a utilizar la aplicación sin volver a introducir sus credenciales.
+
+Las pruebas de `AdministradorWebTest` comprueban el identificador guardado en
+sesión, la redirección y el acceso inmediato a la página de destino tras registrar
+un administrador o un usuario normal. El alta normal se verifica tanto con un
+administrador existente como sin él. También se comprueba que un error de
+validación, un correo repetido o el intento de crear un segundo administrador
+no abren una sesión autenticada.
+
+Validación:
+
+```bash
+./mvnw -Dtest=AdministradorWebTest,UsuarioWebTest,BloqueoUsuariosWebTest test
+```
+
+Resultado: **17 pruebas ejecutadas, 0 fallos, 0 errores y 0 omitidas**
+(`BUILD SUCCESS`). `git diff --check` también pasa sin incidencias.

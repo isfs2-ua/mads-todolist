@@ -23,6 +23,13 @@
                     <td th:text="${usuario.email}"></td>
                     <td>
                         <a class="btn btn-primary btn-sm" th:href="@{/registrados/{id}(id=${usuario.id})}">Ver descripción</a>
+                        <form class="d-inline" method="post" th:if="${!usuario.administrador}"
+                              th:action="@{/registrados/{id}/bloqueo(id=${usuario.id})}">
+                            <input type="hidden" name="bloqueado" th:value="${!usuario.bloqueado}"/>
+                            <button type="submit" class="btn btn-sm"
+                                    th:classappend="${usuario.bloqueado} ? 'btn-success' : 'btn-warning'"
+                                    th:text="${usuario.bloqueado} ? 'Habilitar' : 'Bloquear'">Bloquear</button>
+                        </form>
                     </td>
                 </tr>
                 </tbody>

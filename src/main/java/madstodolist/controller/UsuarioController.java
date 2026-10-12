@@ -7,9 +7,13 @@ import madstodolist.dto.UsuarioData;
 import madstodolist.service.UsuarioService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
+import org.springframework.http.HttpStatus;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.server.ResponseStatusException;
 
 @Controller
 public class UsuarioController {
@@ -47,5 +51,20 @@ public class UsuarioController {
         model.addAttribute("usuarioDescripcion", usuario);
         model.addAttribute("usuario", usuarioLogeado);
         return "descripcionUsuario";
+    }
+
+    @PostMapping("/registrados/{id}/bloqueo")
+    public String cambiarBloqueo(@PathVariable("id") Long idUsuario,
+                                 @RequestParam boolean bloqueado) {
+        comprobarAdministrador();
+        UsuarioData usuario = usuarioService.findById(idUsuario);
+        if (usuario == null) {
+            throw new UsuarioNotFoundException();
+        }
+        if (bloqueado && usuario.isAdministrador()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "No se puede bloquear al administrador");
+        }
+        usuarioService.cambiarBloqueo(idUsuario, bloqueado);
+        return "redirect:/registrados";
     }
 }
