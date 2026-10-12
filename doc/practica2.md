@@ -568,3 +568,36 @@ Resultado: **19 pruebas ejecutadas, 0 fallos, 0 errores y 0 omitidas**
 Este incremento prepara la persistencia y el servicio. Los endpoints con
 comprobación de administrador, los botones del listado y el rechazo del login
 de una cuenta bloqueada quedan para los siguientes pasos.
+
+### Segundo incremento: botones y endpoint de bloqueo
+
+El listado incorpora un formulario POST por usuario normal. Envía a
+`/registrados/{id}/bloqueo` el parámetro booleano `bloqueado`, con el estado
+contrario al actual: «Bloquear» si está habilitado y «Habilitar» si está bloqueado.
+Los botones utilizan los estilos Bootstrap y comparten la celda con el enlace
+a la descripción.
+
+`UsuarioController.cambiarBloqueo` reutiliza `comprobarAdministrador()` antes de
+consultar la cuenta. Sin permisos devuelve HTTP 401; si el usuario solicitado
+no existe, HTTP 404. Tras llamar al servicio redirige a `/registrados`, donde el
+botón refleja el estado actualizado. El administrador no tiene botón de bloqueo:
+para evitar perder el único acceso de administración, un POST directo para
+bloquearlo también se rechaza con HTTP 400 y «No se puede bloquear al administrador».
+
+`BloqueoUsuariosWebTest` verifica el formulario, el cambio de ambos estados y la
+redirección, además de los POST sin sesión, con un usuario normal o con un
+identificador de sesión inexistente. En esos casos comprueba que el estado no
+cambia, tanto al intentar bloquear como habilitar. También cubre el usuario
+inexistente y el intento de bloqueo del administrador. La prueba del listado
+adapta su patrón de filas para admitir el formulario junto al enlace existente.
+
+Validación:
+
+```bash
+./mvnw -Dtest=BloqueoUsuariosWebTest,ListadoUsuariosWebTest,UsuarioServiceTest test
+```
+
+Resultado: **20 pruebas ejecutadas, 0 fallos, 0 errores y 0 omitidas**
+(`BUILD SUCCESS`). `git diff --check` también pasa sin incidencias.
+
+El rechazo del login de una cuenta bloqueada queda pendiente del siguiente paso.

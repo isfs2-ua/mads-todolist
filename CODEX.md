@@ -27,9 +27,15 @@ que aparecen más abajo:
   HTTP 404 si la ficha no existe.
 - El primer incremento de #8, en `bloqueo-usuarios`, añade `bloqueado` a `Usuario`
   y `UsuarioData`, inicialmente `false`, y el método transaccional
-  `UsuarioService.cambiarBloqueo(usuarioId, bloqueado)`. Los endpoints con permisos,
-  los botones y el rechazo del login bloqueado quedan para los siguientes pasos.
+  `UsuarioService.cambiarBloqueo(usuarioId, bloqueado)`.
   Validación de este incremento: **19 pruebas de servicio y repositorio superadas**.
+- El segundo incremento de #8 añade POST `/registrados/{id}/bloqueo`, con el
+  parámetro booleano `bloqueado`, y botones «Bloquear»/«Habilitar» en el listado.
+  El endpoint comprueba administrador y existencia antes de cambiar el estado,
+  y redirige al listado. No se ofrece bloqueo para el administrador y un POST
+  directo para bloquearlo devuelve HTTP 400. El rechazo del login bloqueado
+  queda pendiente del siguiente paso.
+  Validación: **20 pruebas de bloqueo web, listado y servicio superadas**.
 - `PaginaErrorResolver` selecciona `error.html` para las respuestas HTML de
   error. La plantilla usa Bootstrap y muestra código HTTP, título en español,
   motivo y enlaces a login y about. Conserva los motivos de los errores 4xx;

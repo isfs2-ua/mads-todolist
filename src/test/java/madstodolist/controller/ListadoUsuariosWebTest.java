@@ -32,7 +32,7 @@ public class ListadoUsuariosWebTest {
     private String patronFilaUsuario(Long id, String email) {
         return "(?s).*<tr>\\s*<td>" + id + "</td>\\s*<td>" + Pattern.quote(email)
                 + "</td>\\s*<td>\\s*<a[^>]* href=\"/registrados/" + id
-                + "\">Ver descripción</a>\\s*</td>\\s*</tr>.*";
+                + "\">Ver descripción</a>(?:(?!</td>).)*</td>\\s*</tr>.*";
     }
 
     @Test
