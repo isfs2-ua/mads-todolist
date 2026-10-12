@@ -343,3 +343,117 @@ Con este incremento se completa la funcionalidad de la issue #5: cada usuario
 del listado tiene un enlace a `/registrados/{id}`, su ficha muestra todos sus
 datos salvo la contraseña y permite volver al listado, con el menú
 correspondiente a la sesión.
+
+## 005 Usuario administrador
+
+La [issue #6](https://github.com/isfs2-ua/mads-todolist/issues/6) solicita
+permitir el registro de un único administrador y dirigirlo al listado tras
+autenticarse.
+
+La implementación del modelo, el formulario y el login está incluida en el
+commit `c536f30`, «Añadido rol de administrador único en el servicio de registro».
+Las siguientes secciones describen las partes de ese mismo cambio.
+
+### Rol de administrador y regla de alta
+
+`Usuario` y `UsuarioData` incorporan la propiedad `administrador`, consultada
+mediante `isAdministrador()`. Los usuarios normales tienen el valor lógico
+`false` por defecto. `UsuarioRepository.existsByAdministradorTrue()` permite
+consultar si existe un administrador, y `UsuarioService.existeAdministrador()`
+expone esa consulta mediante una transacción de lectura.
+
+El servicio de registro rechaza el alta de otro administrador con el mensaje
+«Ya existe un usuario administrador». La comprobación se realiza en el servicio,
+por lo que también cubre llamadas que no pasan por el formulario. Se siguen
+permitiendo las altas de usuarios normales después de registrar al administrador.
+
+En H2, la columna `administrador` tiene una restricción única: guarda `TRUE`
+para el administrador y `NULL` para usuarios normales. El getter y el setter
+traducen esa representación al booleano de la aplicación. Los múltiples valores
+nulos permiten usuarios normales ilimitados; el valor verdadero sólo puede
+aparecer una vez. Esta restricción también impide que dos altas simultáneas
+creen dos administradores. El servicio traduce el conflicto del INSERT a la
+misma excepción de negocio.
+
+Las pruebas verifican la persistencia del rol, la consulta de existencia, las
+altas normales antes y después del administrador y el rechazo del segundo
+administrador sin guardar sus datos. Una prueba de repositorio intenta guardar
+dos administradores directamente y comprueba la restricción de la base de datos.
+
+Validación: `./mvnw -Dtest=UsuarioServiceTest,UsuarioTest test`.
+Resultado: **17 pruebas, 0 fallos, 0 errores y 0 omitidas**, `BUILD SUCCESS`.
+`git diff --check` también pasa sin incidencias.
+
+### Formulario de registro
+
+`RegistroData` incorpora el booleano `administrador`, cuyo valor por defecto
+es `false`. `formRegistro.html` enlaza el checkbox «Registrarse como
+administrador» con esa propiedad y lo muestra sólo cuando no existe uno:
+
+```html
+<div class="form-check mb-3" th:if="${!existeAdministrador}">
+    <input id="administrador" class="form-check-input" type="checkbox"
+           th:field="*{administrador}"/>
+    <label class="form-check-label" for="administrador">Registrarse como administrador</label>
+</div>
+```
+
+`LoginController` consulta `UsuarioService.existeAdministrador()` y añade el
+resultado al modelo al abrir y procesar el formulario. Así, la disponibilidad
+del checkbox también se respeta cuando se vuelve a mostrar la página por
+errores de validación o por un correo ya registrado. Si todavía no existe un
+administrador, un error de validación conserva la selección realizada.
+
+El controller copia el rol solicitado a `UsuarioData` antes de llamar a
+`registrar()`. Si alguien envía un POST directo solicitando ser un segundo
+administrador, el servicio lo rechaza. El controller captura
+`UsuarioServiceException`, muestra «Ya existe un usuario administrador» y
+actualiza la disponibilidad del checkbox. Esta comprobación también cubre el
+caso de que otro usuario se registre como administrador después de abrir el
+formulario. Un registro correcto redirige a `/login`, sin iniciar sesión.
+
+### Login y ejemplo de uso
+
+Tras comprobar las credenciales, `LoginController` guarda el identificador del
+usuario en sesión mediante `ManagerUserSession.logearUsuario()`. Consulta el
+rol del usuario recuperado de la base de datos: si `isAdministrador()` devuelve
+`true`, redirige a `/registrados`; para un usuario normal mantiene la
+redirección a `/usuarios/{id}/tareas`. El rol no procede del formulario de login.
+
+Por ejemplo, el primer usuario marca «Registrarse como administrador» y completa
+el alta. La aplicación lo lleva al login. Al introducir sus credenciales,
+accede al listado de usuarios registrados. Desde ese momento, el formulario
+de registro deja de ofrecer el checkbox, pero permite seguir dando de alta
+usuarios normales. Una contraseña incorrecta muestra el error de login y no
+abre una nueva sesión.
+
+### Pruebas web y validación final
+
+`AdministradorWebTest` utiliza MockMvc, el servicio real y H2, con limpieza
+mediante `clean-db.sql`. Sus ocho pruebas comprueban:
+
+- La aparición del checkbox y su desaparición tras registrar al administrador.
+- El alta normal cuando ya existe un administrador.
+- El rechazo de un POST directo para crear un segundo administrador, sin
+  guardar al usuario solicitado.
+- La conservación del checkbox seleccionado tras un error de validación
+  cuando todavía no existe administrador.
+- La ausencia del checkbox en respuestas con errores de validación o correo
+  repetido cuando ya existe administrador.
+- La redirección del administrador al listado, el identificador guardado en
+  sesión y la carga de `/registrados` con esa sesión.
+- La redirección del usuario normal a sus tareas y su identificador en sesión.
+- El rechazo de una contraseña incorrecta del administrador sin abrir sesión.
+
+La suite completa se ha vuelto a ejecutar sobre el commit `c536f30`:
+
+```bash
+./mvnw test
+```
+
+Resultado: **60 pruebas ejecutadas, 0 fallos, 0 errores y 0 omitidas**
+(`BUILD SUCCESS`). `git diff --check` también pasa sin incidencias.
+
+Con este cambio se completa la funcionalidad de la issue #6. La restricción
+de acceso al listado y a las fichas corresponde a la siguiente historia,
+«006 Protección de usuarios» (issue #7).

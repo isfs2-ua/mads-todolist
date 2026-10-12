@@ -1,4 +1,27 @@
-t# Contexto del proyecto ToDoList
+# Contexto del proyecto ToDoList
+
+## Actualización del 12/10/2026
+
+Esta actualización prevalece sobre las descripciones históricas del 06/10/2026
+que aparecen más abajo:
+
+- `main` incluye el menú común, el listado `/registrados` y la descripción
+  `/registrados/{id}`, enlazada desde el listado y sin mostrar la contraseña.
+- La versión Maven vigente es `1.1.0-SNAPSHOT`.
+- La rama `usuario-administrador` implementa la issue #6 («005 Usuario
+  administrador») en tres incrementos: modelo y servicio, formulario y login.
+  `UsuarioData` y `RegistroData` incorporan `administrador`; `Usuario` expone
+  `isAdministrador()` y lo persiste como `TRUE` o `NULL` en una columna única
+  para impedir dos administradores. `UsuarioService.existeAdministrador()`
+  consulta su existencia y `registrar()` rechaza un segundo administrador.
+- `/registro` ofrece el checkbox sólo mientras no exista un administrador,
+  también al volver a mostrar el formulario con errores. Un POST directo para
+  crear otro administrador vuelve al formulario con un error de negocio.
+- Tras el login, el administrador va a `/registrados` y el usuario normal a
+  sus tareas. La protección del listado y de la descripción queda para #7;
+  el bloqueo de usuarios, para #8.
+- `doc/practica2.md` documenta los incrementos y sus pruebas. La suite completa
+  pasa con **60 pruebas, sin fallos ni errores**; `git diff --check` también pasa.
 
 ## 1. Propósito y fuentes
 
