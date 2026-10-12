@@ -36,7 +36,7 @@ public class ListadoUsuariosWebTest {
     }
 
     @Test
-    public void registradosSinSesionMuestraIdentificadoresYCorreos() throws Exception {
+    public void registradosSinSesionDevuelveNoAutorizado() throws Exception {
         UsuarioData primero = new UsuarioData();
         primero.setEmail("primero@ua.es");
         primero.setPassword("clave-primero");
@@ -48,32 +48,21 @@ public class ListadoUsuariosWebTest {
         segundo = usuarioService.registrar(segundo);
 
         mockMvc.perform(get("/registrados"))
-                .andExpect(status().isOk())
-                .andExpect(view().name("listaUsuarios"))
-                .andExpect(content().string(containsString("<a class=\"navbar-brand\" href=\"/about\">ToDoList</a>")))
-                .andExpect(content().string(containsString("<a class=\"nav-link\" href=\"/login\">Login</a>")))
-                .andExpect(content().string(containsString("<a class=\"nav-link\" href=\"/registro\">Registro</a>")))
-                .andExpect(content().string(not(containsString("href=\"/logout\""))))
-                .andExpect(content().string(containsString("<th scope=\"col\">Identificador</th>")))
-                .andExpect(content().string(containsString("<th scope=\"col\">Correo electrónico</th>")))
-                .andExpect(content().string(containsString("<th scope=\"col\">Acción</th>")))
-                .andExpect(content().string(matchesPattern("(?s).*<tbody>\\s*"
-                        + "(<tr>\\s*<td>[^<]+</td>\\s*<td>[^<]+</td>\\s*<td>\\s*"
-                        + "<a[^>]*>Ver descripción</a>\\s*</td>\\s*</tr>\\s*){2}"
-                        + "</tbody>.*")))
-                .andExpect(content().string(matchesPattern(patronFilaUsuario(primero.getId(), primero.getEmail()))))
-                .andExpect(content().string(matchesPattern(patronFilaUsuario(segundo.getId(), segundo.getEmail()))))
+                .andExpect(status().isUnauthorized())
+                .andExpect(status().reason("No autorizado: se necesita permiso de administrador"))
+                .andExpect(content().string(not(containsString(primero.getEmail()))))
+                .andExpect(content().string(not(containsString(segundo.getEmail()))))
                 .andExpect(content().string(not(containsString("clave-primero"))))
-                .andExpect(content().string(not(containsString("clave-segundo"))))
-                .andExpect(content().string(not(containsString("No hay usuarios registrados."))));
+                .andExpect(content().string(not(containsString("clave-segundo"))));
     }
 
     @Test
-    public void registradosConSesionMuestraMenuDelUsuarioYListadoCompleto() throws Exception {
+    public void registradosConAdministradorMuestraMenuYListadoCompleto() throws Exception {
         UsuarioData usuario = new UsuarioData();
         usuario.setEmail("menu@ua.es");
         usuario.setNombre("Usuario del menú");
         usuario.setPassword("123");
+        usuario.setAdministrador(true);
         usuario = usuarioService.registrar(usuario);
 
         UsuarioData otro = new UsuarioData();
@@ -95,29 +84,36 @@ public class ListadoUsuariosWebTest {
                 .andExpect(content().string(not(containsString("href=\"/login\""))))
                 .andExpect(content().string(not(containsString("href=\"/registro\""))))
                 .andExpect(content().string(containsString("src=\"/js/bootstrap.min.js\"")))
+                .andExpect(content().string(containsString("<th scope=\"col\">Identificador</th>")))
+                .andExpect(content().string(containsString("<th scope=\"col\">Correo electrónico</th>")))
+                .andExpect(content().string(containsString("<th scope=\"col\">Acción</th>")))
                 .andExpect(content().string(matchesPattern(patronFilaUsuario(usuario.getId(), usuario.getEmail()))))
-                .andExpect(content().string(matchesPattern(patronFilaUsuario(otro.getId(), otro.getEmail()))));
+                .andExpect(content().string(matchesPattern(patronFilaUsuario(otro.getId(), otro.getEmail()))))
+                .andExpect(content().string(not(containsString("No hay usuarios registrados."))));
     }
 
     @Test
-    public void registradosConUsuarioDeSesionInexistenteMuestraMenuVisitante() throws Exception {
+    public void registradosConUsuarioDeSesionInexistenteDevuelveNoAutorizado() throws Exception {
         MockHttpSession session = new MockHttpSession();
         session.setAttribute("idUsuarioLogeado", Long.MAX_VALUE);
 
         mockMvc.perform(get("/registrados").session(session))
-                .andExpect(status().isOk())
-                .andExpect(content().string(containsString("<a class=\"nav-link\" href=\"/login\">Login</a>")))
-                .andExpect(content().string(containsString("<a class=\"nav-link\" href=\"/registro\">Registro</a>")))
-                .andExpect(content().string(not(containsString("href=\"/logout\""))))
-                .andExpect(content().string(containsString("No hay usuarios registrados.")));
+                .andExpect(status().isUnauthorized())
+                .andExpect(status().reason("No autorizado: se necesita permiso de administrador"));
     }
 
     @Test
-    public void registradosSinUsuariosMuestraListadoVacio() throws Exception {
-        mockMvc.perform(get("/registrados"))
-                .andExpect(status().isOk())
-                .andExpect(view().name("listaUsuarios"))
-                .andExpect(content().string(matchesPattern("(?s).*<tbody>\\s*</tbody>.*")))
-                .andExpect(content().string(containsString("No hay usuarios registrados.")));
+    public void registradosConUsuarioNormalDevuelveNoAutorizado() throws Exception {
+        UsuarioData usuario = new UsuarioData();
+        usuario.setEmail("normal@ua.es");
+        usuario.setPassword("123");
+        usuario = usuarioService.registrar(usuario);
+        MockHttpSession session = new MockHttpSession();
+        session.setAttribute("idUsuarioLogeado", usuario.getId());
+
+        mockMvc.perform(get("/registrados").session(session))
+                .andExpect(status().isUnauthorized())
+                .andExpect(status().reason("No autorizado: se necesita permiso de administrador"))
+                .andExpect(content().string(not(containsString(usuario.getEmail()))));
     }
 }

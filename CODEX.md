@@ -18,10 +18,21 @@ que aparecen más abajo:
   también al volver a mostrar el formulario con errores. Un POST directo para
   crear otro administrador vuelve al formulario con un error de negocio.
 - Tras el login, el administrador va a `/registrados` y el usuario normal a
-  sus tareas. La protección del listado y de la descripción queda para #7;
-  el bloqueo de usuarios, para #8.
+  sus tareas. En los dos incrementos de #7, la rama `proteccion-usuarios`
+  restringe `/registrados` y `/registrados/{id}` al administrador mediante
+  `UsuarioController.comprobarAdministrador()`: sin sesión, con un usuario normal
+  o con una sesión de usuario inexistente devuelve HTTP 401 y el motivo
+  «No autorizado: se necesita permiso de administrador». En la ficha se comprueban
+  los permisos antes de buscar el usuario solicitado; un administrador recibe
+  HTTP 404 si la ficha no existe. El bloqueo de usuarios queda para #8.
+- `PaginaErrorResolver` selecciona `error.html` para las respuestas HTML de
+  error. La plantilla usa Bootstrap y muestra código HTTP, título en español,
+  motivo y enlaces a login y about. Conserva los motivos de los errores 4xx;
+  los fallos internos muestran un mensaje genérico. `PaginaErrorWebTest`
+  comprueba las páginas HTTP 401 y 404 con un servidor en un puerto aleatorio
+  y el mensaje genérico de HTTP 500 en el resolver.
 - `doc/practica2.md` documenta los incrementos y sus pruebas. La suite completa
-  pasa con **60 pruebas, sin fallos ni errores**; `git diff --check` también pasa.
+  pasa con **65 pruebas, sin fallos ni errores**; `git diff --check` también pasa.
 
 ## 1. Propósito y fuentes
 

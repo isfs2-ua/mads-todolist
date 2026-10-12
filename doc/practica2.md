@@ -457,3 +457,83 @@ Resultado: **60 pruebas ejecutadas, 0 fallos, 0 errores y 0 omitidas**
 Con este cambio se completa la funcionalidad de la issue #6. La restricción
 de acceso al listado y a las fichas corresponde a la siguiente historia,
 «006 Protección de usuarios» (issue #7).
+
+## 006 Protección del listado y la descripción de usuario
+
+La [issue #7](https://github.com/isfs2-ua/mads-todolist/issues/7) solicita
+restringir ambas páginas al administrador y devolver HTTP 401 («No autorizado»)
+con un mensaje de permisos a quienes intenten acceder sin autorización.
+
+### Primer incremento: protección del listado
+
+`UsuarioController.listadoUsuarios` recupera al usuario de la sesión y comprueba
+que existe y que `isAdministrador()` es verdadero antes de consultar el listado.
+Si no se cumple, lanza `UsuarioNoAdministradorException`. Esta excepción sigue
+el patrón de las páginas de tareas mediante `@ResponseStatus`: devuelve HTTP
+401 con el motivo «No autorizado: se necesita permiso de administrador».
+
+`ListadoUsuariosWebTest` adapta las pruebas al nuevo requisito. Comprueba el
+rechazo sin sesión, con un usuario normal y con un identificador de sesión
+inexistente. El caso autorizado utiliza un administrador y conserva las
+comprobaciones del menú, las columnas y las filas con enlaces a las fichas.
+El listado vacío deja de ser un caso accesible: el administrador que permite
+entrar necesariamente forma parte de los usuarios registrados.
+
+Validación: `./mvnw test`.
+Resultado: **60 pruebas ejecutadas, 0 fallos, 0 errores y 0 omitidas**
+(`BUILD SUCCESS`). `git diff --check` también pasa sin incidencias.
+
+Este incremento protege únicamente `/registrados`. La protección de
+`/registrados/{id}` queda pendiente del siguiente paso.
+
+### Segundo incremento: protección de la descripción
+
+`UsuarioController` extrae la comprobación de sesión y rol al método privado
+`comprobarAdministrador()`, reutilizado por el listado y la descripción. Devuelve
+el DTO del administrador para incorporarlo al menú y mantiene HTTP 401 con el
+mismo motivo cuando falta autorización.
+
+La descripción comprueba los permisos antes de buscar la ficha solicitada.
+Así, sin permisos siempre se devuelve HTTP 401, incluso si el identificador de
+la URL no existe. Un administrador sigue recibiendo HTTP 404 («Usuario no
+encontrado») cuando consulta una ficha inexistente.
+
+`DescripcionUsuarioWebTest` adapta los casos de datos completos, campos
+opcionales, menú y ficha inexistente para utilizar una sesión de administrador.
+Comprueba también el rechazo con una sesión de usuario inexistente. Dos nuevas
+pruebas verifican el acceso sin sesión y con un usuario normal: este último
+no puede consultar su propia ficha, la de otro usuario ni un identificador
+inexistente. Se mantienen las comprobaciones de datos y ausencia de contraseñas
+en las respuestas autorizadas.
+
+Validación: `./mvnw test`.
+Resultado: **62 pruebas ejecutadas, 0 fallos, 0 errores y 0 omitidas**
+(`BUILD SUCCESS`). `git diff --check` también pasa sin incidencias.
+
+Con este incremento, tanto `/registrados` como `/registrados/{id}` quedan
+protegidos en el servidor mediante el rol de administrador.
+
+### Página de errores personalizada
+
+Se añade `error.html` para sustituir la pantalla predeterminada de Spring Boot
+en las respuestas HTML de error. Reutiliza el menú de visitante y los estilos
+Bootstrap locales, con una tarjeta centrada que muestra el código HTTP, un
+título en español, el motivo y enlaces al login y a «Acerca de ToDoList».
+
+`PaginaErrorResolver` implementa `ErrorViewResolver` y selecciona esta plantilla
+manteniendo el estado HTTP original. Para errores 4xx recupera el motivo enviado
+por el servlet, como «No autorizado: se necesita permiso de administrador».
+Cuando no hay motivo utiliza un mensaje alternativo; para 404 indica que la
+página o el recurso no existe. Los errores internos muestran un mensaje genérico.
+El texto se presenta con `th:text`, sin interpretar HTML incluido en el motivo.
+
+`PaginaErrorWebTest` arranca Tomcat en un puerto aleatorio y solicita HTML para
+verificar el flujo real de errores: ambas rutas protegidas devuelven la nueva
+página con HTTP 401 y su motivo; una ruta inexistente conserva HTTP 404 y muestra
+el mensaje correspondiente. Otra prueba comprueba que el resolver sustituye
+los detalles de un fallo interno por el mensaje genérico para HTTP 500.
+
+Validación: `./mvnw test`.
+Resultado: **65 pruebas ejecutadas, 0 fallos, 0 errores y 0 omitidas**
+(`BUILD SUCCESS`). `git diff --check` también pasa sin incidencias.
+Estas pruebas necesitan permiso para abrir el puerto local de Tomcat.
