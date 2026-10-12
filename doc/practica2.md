@@ -512,3 +512,28 @@ Resultado: **62 pruebas ejecutadas, 0 fallos, 0 errores y 0 omitidas**
 
 Con este incremento, tanto `/registrados` como `/registrados/{id}` quedan
 protegidos en el servidor mediante el rol de administrador.
+
+### Página de errores personalizada
+
+Se añade `error.html` para sustituir la pantalla predeterminada de Spring Boot
+en las respuestas HTML de error. Reutiliza el menú de visitante y los estilos
+Bootstrap locales, con una tarjeta centrada que muestra el código HTTP, un
+título en español, el motivo y enlaces al login y a «Acerca de ToDoList».
+
+`PaginaErrorResolver` implementa `ErrorViewResolver` y selecciona esta plantilla
+manteniendo el estado HTTP original. Para errores 4xx recupera el motivo enviado
+por el servlet, como «No autorizado: se necesita permiso de administrador».
+Cuando no hay motivo utiliza un mensaje alternativo; para 404 indica que la
+página o el recurso no existe. Los errores internos muestran un mensaje genérico.
+El texto se presenta con `th:text`, sin interpretar HTML incluido en el motivo.
+
+`PaginaErrorWebTest` arranca Tomcat en un puerto aleatorio y solicita HTML para
+verificar el flujo real de errores: ambas rutas protegidas devuelven la nueva
+página con HTTP 401 y su motivo; una ruta inexistente conserva HTTP 404 y muestra
+el mensaje correspondiente. Otra prueba comprueba que el resolver sustituye
+los detalles de un fallo interno por el mensaje genérico para HTTP 500.
+
+Validación: `./mvnw test`.
+Resultado: **65 pruebas ejecutadas, 0 fallos, 0 errores y 0 omitidas**
+(`BUILD SUCCESS`). `git diff --check` también pasa sin incidencias.
+Estas pruebas necesitan permiso para abrir el puerto local de Tomcat.
