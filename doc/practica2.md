@@ -206,3 +206,140 @@ ha comprobado el formato del diff mediante `git diff --check`, sin incidencias.
 Con este incremento se completa la funcionalidad de la issue #4: `/registrados`
 muestra los identificadores y correos de todos los usuarios, tanto con sesión
 como sin ella, con el menú común correspondiente y un mensaje si no hay datos.
+
+## 004 Página de descripción de un usuario
+
+La [issue #5](https://github.com/isfs2-ua/mads-todolist/issues/5) solicita un
+enlace desde el listado de usuarios a su descripción en `/registrados/{id}`,
+con todos sus datos salvo la contraseña.
+
+### Primer incremento: consulta y página de descripción
+
+Se ha añadido `UsuarioController.descripcionUsuario`, que atiende GET
+`/registrados/{id}` y reutiliza `UsuarioService.findById()` para recuperar el
+usuario solicitado. Si existe, lo añade al modelo como `usuarioDescripcion` y
+devuelve la vista `descripcionUsuario`. Este atributo identifica al usuario
+consultado y permite distinguirlo del usuario de sesión cuando se incorpore el
+menú en el tercer incremento.
+
+Si el identificador no corresponde a ningún usuario, se lanza la nueva
+`UsuarioNotFoundException`, anotada con `@ResponseStatus`: devuelve HTTP 404
+con el motivo «Usuario no encontrado», siguiendo el patrón de las excepciones
+web existentes del proyecto.
+
+La plantilla `descripcionUsuario.html` reutiliza el fragmento `head` y Bootstrap.
+Muestra identificador, correo electrónico, nombre y fecha de nacimiento mediante
+una lista de descripción (`dl`, `dt`, `dd`) y `th:text`. La fecha se presenta en
+formato `dd/MM/yyyy`. Para nombre vacío o ausente y fecha ausente se muestra
+«Sin especificar», ya que ambos campos son opcionales en el registro. La
+contraseña no se incorpora al HTML. La consulta es accesible sin sesión.
+
+`DescripcionUsuarioWebTest` incorpora tres pruebas de integración con MockMvc,
+el servicio real y H2; `clean-db.sql` limpia los datos antes de cada prueba:
+
+- `descripcionSinSesionMuestraDatosSinPassword` comprueba HTTP 200, la vista,
+  los cuatro datos y la ausencia de la contraseña y de su etiqueta.
+- `descripcionSinDatosOpcionalesMuestraSinEspecificar` comprueba que la página
+  funciona para usuarios registrados sin nombre ni fecha de nacimiento.
+- `descripcionUsuarioInexistenteDevuelve404` comprueba HTTP 404 y su motivo.
+
+Comando de validación del incremento junto con el listado y el servicio:
+
+```bash
+./mvnw -Dtest=DescripcionUsuarioWebTest,ListadoUsuariosWebTest,UsuarioServiceTest test
+```
+
+Resultado: **15 pruebas ejecutadas, 0 fallos, 0 errores y 0 omitidas**
+(`BUILD SUCCESS`): tres de la descripción, cuatro del listado y ocho del
+servicio. `git diff --check` también pasa sin incidencias.
+
+Los enlaces desde el listado y de vuelta a él corresponden al segundo
+incremento. El menú según la sesión se incorporará en el tercero.
+
+### Segundo incremento: navegación entre listado y descripción
+
+Se ha añadido la columna «Acción» a `listaUsuarios.html`. Cada fila ofrece el
+enlace «Ver descripción», generado con
+`th:href="@{/registrados/{id}(id=${usuario.id})}"`, que apunta a la ficha del
+usuario de esa fila. Se mantienen las columnas de identificador y correo y el
+mensaje del listado vacío.
+
+En `descripcionUsuario.html` se incorpora «Volver al listado» con destino
+`/registrados`, tanto para usuarios con todos sus datos como para los que no
+han indicado los campos opcionales. Ambos enlaces reutilizan estilos Bootstrap.
+No es necesario modificar los controladores ni el servicio para este incremento.
+
+Se han ampliado las pruebas existentes:
+
+- Las pruebas del listado con y sin sesión comprueban que cada enlace «Ver
+  descripción» está en la fila del identificador y correo correspondientes.
+  La comprobación de las dos filas contempla ahora la tercera columna, y se
+  verifica su cabecera «Acción». Se utiliza un método auxiliar para comprobar
+  la asociación entre datos y enlace sin depender del orden de las filas.
+- Las pruebas de descripción con datos completos y con datos opcionales
+  ausentes verifican «Volver al listado» y su destino `/registrados`.
+- Se mantienen las comprobaciones del listado vacío, la ausencia de contraseñas
+  y HTTP 404 para usuarios inexistentes.
+
+Comando de validación del incremento junto con el servicio:
+
+```bash
+./mvnw -Dtest=DescripcionUsuarioWebTest,ListadoUsuariosWebTest,UsuarioServiceTest test
+```
+
+Resultado: **15 pruebas ejecutadas, 0 fallos, 0 errores y 0 omitidas**
+(`BUILD SUCCESS`). `git diff --check` también pasa sin incidencias.
+
+El menú de la ficha según la sesión y la validación de la suite completa quedan
+pendientes del tercer incremento.
+
+### Tercer incremento: menú de la descripción y validación final
+
+`UsuarioController.descripcionUsuario` recupera el usuario autenticado mediante
+`ManagerUserSession.usuarioLogeado()` y `UsuarioService.findById()` y lo añade
+al modelo como `usuario`. El atributo `usuarioDescripcion` sigue conteniendo
+al usuario solicitado en la URL. Así, al consultar la ficha de otra persona,
+el nombre y los enlaces de tareas y logout del menú corresponden a quien ha
+iniciado sesión, mientras que la ficha muestra los datos de la persona consultada.
+
+`descripcionUsuario.html` selecciona el fragmento de menú común de la misma
+forma que el listado y «Acerca de»:
+
+```html
+<nav th:replace="${usuario != null} ? ~{fragments :: menuUsuario(${usuario})} : ~{fragments :: menuVisitante}"></nav>
+```
+
+Sin sesión, o si el usuario de la sesión ya no existe, se muestra el menú de
+visitante. Se añade el fragmento `javascript` para cargar jQuery, Popper y
+Bootstrap, necesarios para el desplegable del menú autenticado. La ficha
+mantiene sus datos, el enlace de vuelta al listado y HTTP 404 si el usuario
+consultado no existe.
+
+Se ha ampliado `DescripcionUsuarioWebTest`:
+
+- La prueba sin sesión comprueba los enlaces de «ToDoList», «Login» y «Registro»
+  y la ausencia de logout, además de los datos y la ausencia de contraseña.
+- `descripcionDeOtroUsuarioMuestraMenuDelUsuarioLogeado` registra dos usuarios
+  y consulta la ficha del segundo con la sesión del primero. Comprueba que el
+  menú muestra el nombre, las tareas y el logout del primero, y que la ficha
+  muestra los cuatro datos del segundo. También verifica «Cuenta», Bootstrap,
+  el enlace de vuelta y la ausencia de ambas contraseñas y de los enlaces de
+  login y registro.
+- `descripcionConUsuarioDeSesionInexistenteMuestraMenuVisitante` comprueba HTTP
+  200, el menú de visitante y los datos de la ficha con una sesión cuyo
+  identificador ya no corresponde a ningún usuario.
+
+Validación final de los tres incrementos con la suite completa:
+
+```bash
+./mvnw test
+```
+
+Resultado: **49 pruebas ejecutadas, 0 fallos, 0 errores y 0 omitidas**
+(`BUILD SUCCESS`), incluidas las cinco pruebas web de la descripción.
+`git diff --check` también pasa sin incidencias.
+
+Con este incremento se completa la funcionalidad de la issue #5: cada usuario
+del listado tiene un enlace a `/registrados/{id}`, su ficha muestra todos sus
+datos salvo la contraseña y permite volver al listado, con el menú
+correspondiente a la sesión.

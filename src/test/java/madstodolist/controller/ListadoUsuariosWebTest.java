@@ -10,6 +10,8 @@ import org.springframework.mock.web.MockHttpSession;
 import org.springframework.test.context.jdbc.Sql;
 import org.springframework.test.web.servlet.MockMvc;
 
+import java.util.regex.Pattern;
+
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.matchesPattern;
 import static org.hamcrest.Matchers.not;
@@ -26,6 +28,12 @@ public class ListadoUsuariosWebTest {
 
     @Autowired
     private UsuarioService usuarioService;
+
+    private String patronFilaUsuario(Long id, String email) {
+        return "(?s).*<tr>\\s*<td>" + id + "</td>\\s*<td>" + Pattern.quote(email)
+                + "</td>\\s*<td>\\s*<a[^>]* href=\"/registrados/" + id
+                + "\">Ver descripción</a>\\s*</td>\\s*</tr>.*";
+    }
 
     @Test
     public void registradosSinSesionMuestraIdentificadoresYCorreos() throws Exception {
@@ -48,13 +56,13 @@ public class ListadoUsuariosWebTest {
                 .andExpect(content().string(not(containsString("href=\"/logout\""))))
                 .andExpect(content().string(containsString("<th scope=\"col\">Identificador</th>")))
                 .andExpect(content().string(containsString("<th scope=\"col\">Correo electrónico</th>")))
+                .andExpect(content().string(containsString("<th scope=\"col\">Acción</th>")))
                 .andExpect(content().string(matchesPattern("(?s).*<tbody>\\s*"
-                        + "(<tr>\\s*<td>[^<]+</td>\\s*<td>[^<]+</td>\\s*</tr>\\s*){2}"
+                        + "(<tr>\\s*<td>[^<]+</td>\\s*<td>[^<]+</td>\\s*<td>\\s*"
+                        + "<a[^>]*>Ver descripción</a>\\s*</td>\\s*</tr>\\s*){2}"
                         + "</tbody>.*")))
-                .andExpect(content().string(matchesPattern("(?s).*<tr>\\s*<td>" + primero.getId()
-                        + "</td>\\s*<td>primero@ua[.]es</td>\\s*</tr>.*")))
-                .andExpect(content().string(matchesPattern("(?s).*<tr>\\s*<td>" + segundo.getId()
-                        + "</td>\\s*<td>segundo@ua[.]es</td>\\s*</tr>.*")))
+                .andExpect(content().string(matchesPattern(patronFilaUsuario(primero.getId(), primero.getEmail()))))
+                .andExpect(content().string(matchesPattern(patronFilaUsuario(segundo.getId(), segundo.getEmail()))))
                 .andExpect(content().string(not(containsString("clave-primero"))))
                 .andExpect(content().string(not(containsString("clave-segundo"))))
                 .andExpect(content().string(not(containsString("No hay usuarios registrados."))));
@@ -87,10 +95,8 @@ public class ListadoUsuariosWebTest {
                 .andExpect(content().string(not(containsString("href=\"/login\""))))
                 .andExpect(content().string(not(containsString("href=\"/registro\""))))
                 .andExpect(content().string(containsString("src=\"/js/bootstrap.min.js\"")))
-                .andExpect(content().string(matchesPattern("(?s).*<tr>\\s*<td>" + usuario.getId()
-                        + "</td>\\s*<td>menu@ua[.]es</td>\\s*</tr>.*")))
-                .andExpect(content().string(matchesPattern("(?s).*<tr>\\s*<td>" + otro.getId()
-                        + "</td>\\s*<td>otro@ua[.]es</td>\\s*</tr>.*")));
+                .andExpect(content().string(matchesPattern(patronFilaUsuario(usuario.getId(), usuario.getEmail()))))
+                .andExpect(content().string(matchesPattern(patronFilaUsuario(otro.getId(), otro.getEmail()))));
     }
 
     @Test

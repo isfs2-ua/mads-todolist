@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+
+<head th:replace="fragments :: head (titulo='Descripción de usuario')"></head>
+
+<body>
+<nav th:replace="${usuario != null} ? ~{fragments :: menuUsuario(${usuario})} : ~{fragments :: menuVisitante}"></nav>
+<div class="container-fluid">
+    <div class="row mt-3">
+        <div class="col">
+            <h2>Descripción de usuario</h2>
+            <dl>
+                <dt>Identificador</dt>
+                <dd th:text="${usuarioDescripcion.id}"></dd>
+                <dt>Correo electrónico</dt>
+                <dd th:text="${usuarioDescripcion.email}"></dd>
+                <dt>Nombre</dt>
+                <dd th:text="${#strings.isEmpty(usuarioDescripcion.nombre) ? 'Sin especificar' : usuarioDescripcion.nombre}"></dd>
+                <dt>Fecha de nacimiento</dt>
+                <dd th:text="${usuarioDescripcion.fechaNacimiento != null ? #dates.format(usuarioDescripcion.fechaNacimiento, 'dd/MM/yyyy') : 'Sin especificar'}"></dd>
+            </dl>
+            <a class="btn btn-link" th:href="@{/registrados}">Volver al listado</a>
+        </div>
+    </div>
+</div>
+<div th:replace="fragments :: javascript"></div>
+</body>
+</html>
