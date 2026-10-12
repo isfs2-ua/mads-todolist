@@ -485,3 +485,30 @@ Resultado: **60 pruebas ejecutadas, 0 fallos, 0 errores y 0 omitidas**
 
 Este incremento protege únicamente `/registrados`. La protección de
 `/registrados/{id}` queda pendiente del siguiente paso.
+
+### Segundo incremento: protección de la descripción
+
+`UsuarioController` extrae la comprobación de sesión y rol al método privado
+`comprobarAdministrador()`, reutilizado por el listado y la descripción. Devuelve
+el DTO del administrador para incorporarlo al menú y mantiene HTTP 401 con el
+mismo motivo cuando falta autorización.
+
+La descripción comprueba los permisos antes de buscar la ficha solicitada.
+Así, sin permisos siempre se devuelve HTTP 401, incluso si el identificador de
+la URL no existe. Un administrador sigue recibiendo HTTP 404 («Usuario no
+encontrado») cuando consulta una ficha inexistente.
+
+`DescripcionUsuarioWebTest` adapta los casos de datos completos, campos
+opcionales, menú y ficha inexistente para utilizar una sesión de administrador.
+Comprueba también el rechazo con una sesión de usuario inexistente. Dos nuevas
+pruebas verifican el acceso sin sesión y con un usuario normal: este último
+no puede consultar su propia ficha, la de otro usuario ni un identificador
+inexistente. Se mantienen las comprobaciones de datos y ausencia de contraseñas
+en las respuestas autorizadas.
+
+Validación: `./mvnw test`.
+Resultado: **62 pruebas ejecutadas, 0 fallos, 0 errores y 0 omitidas**
+(`BUILD SUCCESS`). `git diff --check` también pasa sin incidencias.
+
+Con este incremento, tanto `/registrados` como `/registrados/{id}` quedan
+protegidos en el servidor mediante el rol de administrador.
