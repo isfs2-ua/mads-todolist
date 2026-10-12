@@ -3,6 +3,7 @@ package madstodolist.repository;
 import madstodolist.model.Usuario;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.jdbc.Sql;
 import org.springframework.transaction.annotation.Transactional;
@@ -11,6 +12,7 @@ import java.text.ParseException;
 import java.text.SimpleDateFormat;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 @SpringBootTest
 @Sql(scripts = "/clean-db.sql")
@@ -18,6 +20,19 @@ public class UsuarioTest {
 
     @Autowired
     private UsuarioRepository usuarioRepository;
+
+    @Test
+    public void baseDatosImpideDosAdministradores() {
+        Usuario primero = new Usuario("admin@ua.es");
+        primero.setAdministrador(true);
+        usuarioRepository.save(primero);
+
+        Usuario segundo = new Usuario("otro.admin@ua.es");
+        segundo.setAdministrador(true);
+        assertThatThrownBy(() -> usuarioRepository.save(segundo))
+                .isInstanceOf(DataIntegrityViolationException.class);
+        assertThat(usuarioRepository.findByEmail(segundo.getEmail())).isEmpty();
+    }
 
     //
     // Tests modelo Usuario en memoria, sin la conexión con la BD

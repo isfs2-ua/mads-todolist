@@ -7,6 +7,7 @@ import org.modelmapper.ModelMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -50,11 +51,25 @@ public class UsuarioService {
             throw new UsuarioServiceException("El usuario no tiene email");
         else if (usuario.getPassword() == null)
             throw new UsuarioServiceException("El usuario no tiene password");
+        else if (usuario.isAdministrador() && existeAdministrador())
+            throw new UsuarioServiceException("Ya existe un usuario administrador");
         else {
             Usuario usuarioNuevo = modelMapper.map(usuario, Usuario.class);
-            usuarioNuevo = usuarioRepository.save(usuarioNuevo);
+            try {
+                usuarioNuevo = usuarioRepository.save(usuarioNuevo);
+            } catch (DataIntegrityViolationException ex) {
+                // Cubre otra alta de administrador entre la consulta y el INSERT.
+                if (usuario.isAdministrador())
+                    throw new UsuarioServiceException("Ya existe un usuario administrador");
+                throw ex;
+            }
             return modelMapper.map(usuarioNuevo, UsuarioData.class);
         }
+    }
+
+    @Transactional(readOnly = true)
+    public boolean existeAdministrador() {
+        return usuarioRepository.existsByAdministradorTrue();
     }
 
     @Transactional(readOnly = true)

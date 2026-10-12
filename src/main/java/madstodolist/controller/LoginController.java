@@ -5,6 +5,7 @@ import madstodolist.dto.LoginData;
 import madstodolist.dto.RegistroData;
 import madstodolist.dto.UsuarioData;
 import madstodolist.service.UsuarioService;
+import madstodolist.service.UsuarioServiceException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -47,6 +48,9 @@ public class LoginController {
 
             managerUserSession.logearUsuario(usuario.getId());
 
+            if (usuario.isAdministrador()) {
+                return "redirect:/registrados";
+            }
             return "redirect:/usuarios/" + usuario.getId() + "/tareas";
         } else if (loginStatus == UsuarioService.LoginStatus.USER_NOT_FOUND) {
             model.addAttribute("error", "No existe usuario");
@@ -61,11 +65,13 @@ public class LoginController {
     @GetMapping("/registro")
     public String registroForm(Model model) {
         model.addAttribute("registroData", new RegistroData());
+        model.addAttribute("existeAdministrador", usuarioService.existeAdministrador());
         return "formRegistro";
     }
 
    @PostMapping("/registro")
    public String registroSubmit(@Valid RegistroData registroData, BindingResult result, Model model) {
+        model.addAttribute("existeAdministrador", usuarioService.existeAdministrador());
 
         if (result.hasErrors()) {
             return "formRegistro";
@@ -82,8 +88,15 @@ public class LoginController {
         usuario.setPassword(registroData.getPassword());
         usuario.setFechaNacimiento(registroData.getFechaNacimiento());
         usuario.setNombre(registroData.getNombre());
+        usuario.setAdministrador(registroData.isAdministrador());
 
-        usuarioService.registrar(usuario);
+        try {
+            usuarioService.registrar(usuario);
+        } catch (UsuarioServiceException ex) {
+            model.addAttribute("error", ex.getMessage());
+            model.addAttribute("existeAdministrador", usuarioService.existeAdministrador());
+            return "formRegistro";
+        }
         return "redirect:/login";
    }
 

@@ -10,6 +10,7 @@ public class UsuarioData {
     private String email;
     private String nombre;
     private String password;
+    private boolean administrador;
     private Date fechaNacimiento;
 
     // Getters y setters
@@ -41,6 +42,14 @@ public class UsuarioData {
     public void setPassword(String password) { this.password = password; }
 
     public String getPassword() { return password; }
+
+    public boolean isAdministrador() {
+        return administrador;
+    }
+
+    public void setAdministrador(boolean administrador) {
+        this.administrador = administrador;
+    }
 
     public Date getFechaNacimiento() {
         return fechaNacimiento;

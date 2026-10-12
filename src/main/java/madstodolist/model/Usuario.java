@@ -21,6 +21,10 @@ public class Usuario implements Serializable {
     private String email;
     private String nombre;
     private String password;
+    // TRUE identifica al administrador; NULL permite múltiples usuarios normales.
+    // La restricción única impide dos administradores incluso con altas simultáneas.
+    @Column(unique = true)
+    private Boolean administrador;
     @Column(name = "fecha_nacimiento")
     @Temporal(TemporalType.DATE)
     private Date fechaNacimiento;
@@ -71,6 +75,14 @@ public class Usuario implements Serializable {
 
     public void setPassword(String password) {
         this.password = password;
+    }
+
+    public boolean isAdministrador() {
+        return Boolean.TRUE.equals(administrador);
+    }
+
+    public void setAdministrador(boolean administrador) {
+        this.administrador = administrador ? Boolean.TRUE : null;
     }
 
     public Date getFechaNacimiento() {

@@ -10,6 +10,7 @@ import org.springframework.test.context.jdbc.Sql;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.tuple;
 
 @SpringBootTest
@@ -28,6 +29,51 @@ public class UsuarioServiceTest {
         usuario.setPassword("123");
         UsuarioData nuevoUsuario = usuarioService.registrar(usuario);
         return nuevoUsuario.getId();
+    }
+
+    @Test
+    public void registroAdministradorPersisteRolYPermiteUsuariosNormales() {
+        assertThat(usuarioService.existeAdministrador()).isFalse();
+        Long usuarioId = addUsuarioBD();
+        assertThat(usuarioService.findById(usuarioId).isAdministrador()).isFalse();
+        assertThat(usuarioService.existeAdministrador()).isFalse();
+
+        UsuarioData administrador = new UsuarioData();
+        administrador.setEmail("admin@ua.es");
+        administrador.setPassword("123");
+        administrador.setAdministrador(true);
+        UsuarioData registrado = usuarioService.registrar(administrador);
+
+        assertThat(registrado.isAdministrador()).isTrue();
+        assertThat(usuarioService.findById(registrado.getId()).isAdministrador()).isTrue();
+        assertThat(usuarioService.findByEmail("admin@ua.es").isAdministrador()).isTrue();
+        assertThat(usuarioService.existeAdministrador()).isTrue();
+
+        UsuarioData normal = new UsuarioData();
+        normal.setEmail("normal@ua.es");
+        normal.setPassword("456");
+        assertThat(usuarioService.registrar(normal).isAdministrador()).isFalse();
+        assertThat(usuarioService.findAll()).hasSize(3);
+    }
+
+    @Test
+    public void registroSegundoAdministradorSeRechazaSinCrearUsuario() {
+        UsuarioData primero = new UsuarioData();
+        primero.setEmail("admin@ua.es");
+        primero.setPassword("123");
+        primero.setAdministrador(true);
+        usuarioService.registrar(primero);
+
+        UsuarioData segundo = new UsuarioData();
+        segundo.setEmail("otro.admin@ua.es");
+        segundo.setPassword("456");
+        segundo.setAdministrador(true);
+
+        assertThatThrownBy(() -> usuarioService.registrar(segundo))
+                .isInstanceOf(UsuarioServiceException.class)
+                .hasMessage("Ya existe un usuario administrador");
+        assertThat(usuarioService.findByEmail(segundo.getEmail())).isNull();
+        assertThat(usuarioService.findAll()).hasSize(1);
     }
 
     @Test

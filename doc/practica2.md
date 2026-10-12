@@ -343,3 +343,39 @@ Con este incremento se completa la funcionalidad de la issue #5: cada usuario
 del listado tiene un enlace a `/registrados/{id}`, su ficha muestra todos sus
 datos salvo la contraseña y permite volver al listado, con el menú
 correspondiente a la sesión.
+
+## 005 Usuario administrador
+
+La [issue #6](https://github.com/isfs2-ua/mads-todolist/issues/6) solicita
+permitir el registro de un único administrador y dirigirlo al listado tras
+autenticarse.
+
+### Primer incremento: rol de administrador y regla de alta
+
+`Usuario` y `UsuarioData` incorporan la propiedad `administrador`, consultada
+mediante `isAdministrador()`. Los usuarios normales tienen el valor lógico
+`false` por defecto. `UsuarioRepository.existsByAdministradorTrue()` permite
+consultar si existe un administrador, y `UsuarioService.existeAdministrador()`
+expone esa consulta mediante una transacción de lectura.
+
+El servicio de registro rechaza el alta de otro administrador con el mensaje
+«Ya existe un usuario administrador». La comprobación se realiza en el servicio,
+por lo que también cubre llamadas que no pasan por el formulario. Se siguen
+permitiendo las altas de usuarios normales después de registrar al administrador.
+
+En H2, la columna `administrador` tiene una restricción única: guarda `TRUE`
+para el administrador y `NULL` para usuarios normales. El getter y el setter
+traducen esa representación al booleano de la aplicación. Los múltiples valores
+nulos permiten usuarios normales ilimitados; el valor verdadero sólo puede
+aparecer una vez. Esta restricción también impide que dos altas simultáneas
+creen dos administradores. El servicio traduce el conflicto del INSERT a la
+misma excepción de negocio.
+
+Las pruebas verifican la persistencia del rol, la consulta de existencia, las
+altas normales antes y después del administrador y el rechazo del segundo
+administrador sin guardar sus datos. Una prueba de repositorio intenta guardar
+dos administradores directamente y comprueba la restricción de la base de datos.
+
+Validación: `./mvnw -Dtest=UsuarioServiceTest,UsuarioTest test`.
+Resultado: **17 pruebas, 0 fallos, 0 errores y 0 omitidas**, `BUILD SUCCESS`.
+`git diff --check` también pasa sin incidencias.
