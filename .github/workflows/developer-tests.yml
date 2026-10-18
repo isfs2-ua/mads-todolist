@@ -7,7 +7,7 @@ jobs:
   launch-tests:
     runs-on: ubuntu-latest
     # Todos los pasos se ejecutan en el contenedor openjda:8-jdk-alpine
-    container: openjdk:8-jdk-alpine
+    container: eclipse-temurin:8-jdk-alpine
 
     steps:
       # Hacemos un checkout del código del repositorio
