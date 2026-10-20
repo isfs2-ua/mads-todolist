@@ -1,7 +1,9 @@
 package madstodolist.repository;
 
 import madstodolist.model.Equipo;
-import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.repository.CrudRepository;
+import java.util.List;
 
-public interface EquipoRepository extends JpaRepository<Equipo, Long> {
+public interface EquipoRepository extends CrudRepository<Equipo, Long> {
+    public List<Equipo> findAll();
 }
