@@ -68,4 +68,28 @@ public class EquipoServiceTest {
         assertThat(usuarios).hasSize(1);
         assertThat(usuarios.get(0).getEmail()).isEqualTo("user@ua");
     }
+
+    @Test
+    public void recuperarEquiposDeUsuario() {
+        // GIVEN
+        // Un usuario y dos equipos en la base de datos
+        UsuarioData usuario = new UsuarioData();
+        usuario.setEmail("user@ua");
+        usuario.setPassword("123");
+        usuario = usuarioService.registrar(usuario);
+        EquipoData equipo1 = equipoService.crearEquipo("Proyecto 1");
+        EquipoData equipo2 = equipoService.crearEquipo("Proyecto 2");
+        equipoService.añadirUsuarioAEquipo(equipo1.getId(), usuario.getId());
+        equipoService.añadirUsuarioAEquipo(equipo2.getId(), usuario.getId());
+
+        // WHEN
+        // Recuperamos los equipos del usuario
+        List<EquipoData> equipos = equipoService.equiposUsuario(usuario.getId());
+
+        // THEN
+        // El usuario pertenece a los dos equipos
+        assertThat(equipos).hasSize(2);
+        assertThat(equipos.get(0).getNombre()).isEqualTo("Proyecto 1");
+        assertThat(equipos.get(1).getNombre()).isEqualTo("Proyecto 2");
+    }
 }
