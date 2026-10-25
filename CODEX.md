@@ -14,7 +14,20 @@
 - El POST también exige sesión válida. Las pruebas cubren creación por usuario normal
   y administrador, errores de nombre y accesos sin sesión o con usuario inexistente.
   Validación del incremento: 42 pruebas de servicio y controller de equipos superadas.
-- La incorporación y la salida de equipos quedan para incrementos posteriores.
+- La salida de equipos queda para el siguiente incremento.
+
+## Historia 009: incorporación a equipos (25/10/2026)
+
+- El listado recibe `equiposUsuario` y ofrece un formulario «Unirme» solo para equipos
+  a los que no pertenece el usuario. Los demás muestran «Ya eres miembro».
+- POST `/equipos/{id}/unirse` usa únicamente el identificador del usuario de la sesión;
+  permite usuarios normales y administradores. Sin sesión válida devuelve HTTP 401,
+  antes de buscar el equipo. Un equipo inexistente devuelve HTTP 404.
+- Tras incorporarse redirige al listado con confirmación. Si ya pertenece al equipo,
+  redirige con el error del servicio, sin modificar la pertenencia.
+- `EquipoWebTest` cubre incorporación, cambio del botón, mensajes, usuario de sesión,
+  petición duplicada, equipo inexistente, acceso no autorizado y rechazo de GET.
+  Validación: 50 pruebas de servicio y controller de equipos superadas.
 
 ## Actualización del 25/10/2026: miembros de equipos (segundo incremento)
 

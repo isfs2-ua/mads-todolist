@@ -40,8 +40,10 @@ public class EquipoController {
 
     @GetMapping("/equipos")
     public String listadoEquipos(Model model) {
-        model.addAttribute("usuario", comprobarUsuarioLogeado());
+        UsuarioData usuario = comprobarUsuarioLogeado();
+        model.addAttribute("usuario", usuario);
         model.addAttribute("equipos", equipoService.findAllOrdenadoPorNombre());
+        model.addAttribute("equiposUsuario", equipoService.equiposUsuario(usuario.getId()));
         return "listaEquipos";
     }
 
@@ -63,6 +65,23 @@ public class EquipoController {
             return "formNuevoEquipo";
         }
         flash.addFlashAttribute("mensaje", "Equipo creado correctamente");
+        return "redirect:/equipos";
+    }
+
+    @PostMapping("/equipos/{id}/unirse")
+    public String unirseEquipo(@PathVariable("id") Long idEquipo, RedirectAttributes flash) {
+        UsuarioData usuario = comprobarUsuarioLogeado();
+        try {
+            equipoService.recuperarEquipo(idEquipo);
+        } catch (EquipoServiceException ex) {
+            throw new EquipoNotFoundException();
+        }
+        try {
+            equipoService.añadirUsuarioAEquipo(idEquipo, usuario.getId());
+            flash.addFlashAttribute("mensaje", "Te has unido al equipo correctamente");
+        } catch (EquipoServiceException ex) {
+            flash.addFlashAttribute("error", ex.getMessage());
+        }
         return "redirect:/equipos";
     }
 

@@ -10,12 +10,14 @@
         <div class="col">
             <h2>Listado de equipos</h2>
             <div class="alert alert-success" role="status" th:if="${mensaje}" th:text="${mensaje}"></div>
+            <div class="alert alert-danger" role="alert" th:if="${error}" th:text="${error}"></div>
             <a class="btn btn-primary mb-3" th:href="@{/equipos/nuevo}">Nuevo equipo</a>
             <table class="table table-striped">
                 <thead>
                 <tr>
                     <th scope="col">Identificador</th>
                     <th scope="col">Nombre</th>
+                    <th scope="col">Participación</th>
                 </tr>
                 </thead>
                 <tbody>
@@ -23,6 +25,13 @@
                     <td th:text="${equipo.id}"></td>
                     <td>
                         <a th:href="@{/equipos/{id}/miembros(id=${equipo.id})}" th:text="${equipo.nombre}"></a>
+                    </td>
+                    <td>
+                        <form method="post" th:unless="${#lists.contains(equiposUsuario, equipo)}"
+                              th:action="@{/equipos/{id}/unirse(id=${equipo.id})}">
+                            <button class="btn btn-primary btn-sm" type="submit">Unirme</button>
+                        </form>
+                        <span th:if="${#lists.contains(equiposUsuario, equipo)}">Ya eres miembro</span>
                     </td>
                 </tr>
                 </tbody>

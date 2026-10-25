@@ -156,6 +156,100 @@ public class EquipoWebTest {
         assertThat(equipoService.findAllOrdenadoPorNombre()).isEmpty();
     }
 
+    @ParameterizedTest
+    @ValueSource(booleans = {false, true})
+    public void unirseAñadeSoloAlUsuarioDeSesionYMuestraConfirmacion(boolean administrador) throws Exception {
+        UsuarioData usuario = crearUsuario(administrador);
+        UsuarioData datosOtro = new UsuarioData();
+        datosOtro.setEmail("otro@ua.es");
+        datosOtro.setPassword("123");
+        UsuarioData otro = usuarioService.registrar(datosOtro);
+        EquipoData equipo = equipoService.crearEquipo("Participación");
+        MockHttpSession session = sesion(usuario.getId());
+
+        mockMvc.perform(get("/equipos").session(session))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("action=\"/equipos/" + equipo.getId() + "/unirse\"")))
+                .andExpect(content().string(containsString(">Unirme</button>")));
+        mockMvc.perform(post("/equipos/" + equipo.getId() + "/unirse").session(session)
+                        .param("idUsuario", otro.getId().toString()))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/equipos"))
+                .andExpect(flash().attribute("mensaje", "Te has unido al equipo correctamente"));
+
+        assertThat(equipoService.usuariosEquipo(equipo.getId())).containsExactly(usuario);
+        assertThat(equipoService.equiposUsuario(usuario.getId())).containsExactly(equipo);
+        assertThat(equipoService.equiposUsuario(otro.getId())).isEmpty();
+        mockMvc.perform(get("/equipos").session(session))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("Te has unido al equipo correctamente")))
+                .andExpect(content().string(containsString("Ya eres miembro")))
+                .andExpect(content().string(not(containsString("action=\"/equipos/" + equipo.getId() + "/unirse\""))));
+    }
+
+    @Test
+    public void unirseSiYaEsMiembroMuestraErrorYConservaPertenencia() throws Exception {
+        UsuarioData usuario = crearUsuario(false);
+        EquipoData equipo = equipoService.crearEquipo("Participación");
+        equipoService.añadirUsuarioAEquipo(equipo.getId(), usuario.getId());
+        MockHttpSession session = sesion(usuario.getId());
+
+        mockMvc.perform(post("/equipos/" + equipo.getId() + "/unirse").session(session))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/equipos"))
+                .andExpect(flash().attribute("error", "El usuario ya pertenece al equipo"))
+                .andExpect(flash().attributeCount(1));
+
+        assertThat(equipoService.usuariosEquipo(equipo.getId())).containsExactly(usuario);
+        mockMvc.perform(get("/equipos").session(session))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("El usuario ya pertenece al equipo")));
+    }
+
+    @Test
+    public void unirseAEquipoInexistenteDevuelveNoEncontrado() throws Exception {
+        UsuarioData usuario = crearUsuario(false);
+
+        mockMvc.perform(post("/equipos/" + Long.MAX_VALUE + "/unirse").session(sesion(usuario.getId())))
+                .andExpect(status().isNotFound())
+                .andExpect(status().reason("Equipo no encontrado"));
+
+        assertThat(equipoService.equiposUsuario(usuario.getId())).isEmpty();
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = {false, true})
+    public void unirseSinUsuarioValidoDevuelveNoAutorizado(boolean sesionInexistente) throws Exception {
+        EquipoData equipo = equipoService.crearEquipo("Participación");
+        org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder peticion =
+                post("/equipos/" + equipo.getId() + "/unirse");
+        if (sesionInexistente) {
+            peticion.session(sesion(Long.MAX_VALUE));
+        }
+        mockMvc.perform(peticion)
+                .andExpect(status().isUnauthorized())
+                .andExpect(status().reason("Usuario no autorizado"));
+
+        assertThat(equipoService.usuariosEquipo(equipo.getId())).isEmpty();
+    }
+
+    @Test
+    public void unirseCompruebaSesionAntesDeBuscarEquipo() throws Exception {
+        mockMvc.perform(post("/equipos/" + Long.MAX_VALUE + "/unirse"))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    public void unirseMedianteGetNoModificaPertenencia() throws Exception {
+        UsuarioData usuario = crearUsuario(false);
+        EquipoData equipo = equipoService.crearEquipo("Participación");
+
+        mockMvc.perform(get("/equipos/" + equipo.getId() + "/unirse").session(sesion(usuario.getId())))
+                .andExpect(status().isMethodNotAllowed());
+
+        assertThat(equipoService.usuariosEquipo(equipo.getId())).isEmpty();
+    }
+
     @Test
     public void listadoMuestraTodosLosEquiposOrdenadosYMenu() throws Exception {
         UsuarioData usuario = crearUsuario(false);
