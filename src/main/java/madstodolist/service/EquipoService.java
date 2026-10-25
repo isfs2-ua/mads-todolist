@@ -56,6 +56,9 @@ public class EquipoService {
 
     @Transactional
     public void añadirUsuarioAEquipo(Long id, Long id1) {
+        if (id == null || id1 == null) {
+            throw new EquipoServiceException("Los identificadores del equipo y del usuario son obligatorios");
+        }
         Equipo equipo = equipoRepository.findById(id).orElse(null);
         Usuario usuario = usuarioRepository.findById(id1).orElse(null);
         if (equipo == null || usuario == null) {

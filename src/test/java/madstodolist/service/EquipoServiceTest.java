@@ -101,6 +101,25 @@ public class EquipoServiceTest {
         assertThat(equipoService.equiposUsuario(usuario.getId())).containsExactly(equipo);
     }
 
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    public void añadirConIdentificadorNuloLanzaExcepcion(boolean equipoNulo) {
+        UsuarioData datosUsuario = new UsuarioData();
+        datosUsuario.setEmail("nuevo@ua");
+        datosUsuario.setPassword("123");
+        UsuarioData usuario = usuarioService.registrar(datosUsuario);
+        EquipoData equipo = equipoService.crearEquipo("Proyecto 1");
+        Long idEquipo = equipoNulo ? null : equipo.getId();
+        Long idUsuario = equipoNulo ? usuario.getId() : null;
+
+        assertThatThrownBy(() -> equipoService.añadirUsuarioAEquipo(idEquipo, idUsuario))
+                .isInstanceOf(EquipoServiceException.class)
+                .hasMessage("Los identificadores del equipo y del usuario son obligatorios");
+
+        assertThat(equipoService.usuariosEquipo(equipo.getId())).isEmpty();
+        assertThat(equipoService.equiposUsuario(usuario.getId())).isEmpty();
+    }
+
     @Test
     public void eliminarUsuarioDeEquipo() {
         // GIVEN: un usuario que pertenece a un equipo
