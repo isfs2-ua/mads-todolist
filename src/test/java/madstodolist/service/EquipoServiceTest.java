@@ -93,6 +93,22 @@ public class EquipoServiceTest {
     }
 
     @Test
+    public void eliminarUsuarioQueNoPerteneceAlEquipoLanzaExcepcion() {
+        UsuarioData datosUsuario = new UsuarioData();
+        datosUsuario.setEmail("ajeno@ua");
+        datosUsuario.setPassword("123");
+        UsuarioData usuario = usuarioService.registrar(datosUsuario);
+        EquipoData equipo = equipoService.crearEquipo("Proyecto 1");
+
+        assertThatThrownBy(() -> equipoService.eliminarUsuarioDeEquipo(equipo.getId(), usuario.getId()))
+                .isInstanceOf(EquipoServiceException.class)
+                .hasMessage("El usuario no pertenece al equipo");
+
+        assertThat(equipoService.usuariosEquipo(equipo.getId())).isEmpty();
+        assertThat(equipoService.equiposUsuario(usuario.getId())).isEmpty();
+    }
+
+    @Test
     public void recuperarEquiposDeUsuario() {
         // GIVEN
         // Un usuario y dos equipos en la base de datos

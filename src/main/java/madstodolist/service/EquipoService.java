@@ -67,6 +67,9 @@ public class EquipoService {
                 .orElseThrow(() -> new EquipoServiceException("No existe equipo con id " + idEquipo));
         Usuario usuario = usuarioRepository.findById(idUsuario)
                 .orElseThrow(() -> new EquipoServiceException("No existe usuario con id " + idUsuario));
+        if (!equipo.getUsuarios().contains(usuario)) {
+            throw new EquipoServiceException("El usuario no pertenece al equipo");
+        }
         equipo.getUsuarios().remove(usuario);
         usuario.getEquipos().remove(equipo);
     }
