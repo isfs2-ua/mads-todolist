@@ -29,6 +29,9 @@ public class EquipoService {
 
     @Transactional
     public EquipoData crearEquipo(String nombre) {
+        if (nombre == null || nombre.trim().isEmpty()) {
+            throw new EquipoServiceException("El nombre del equipo no puede estar vacío");
+        }
         Equipo equipo = new Equipo(nombre);
         equipo = equipoRepository.save(equipo);
         return modelMapper.map(equipo, EquipoData.class);
@@ -53,12 +56,34 @@ public class EquipoService {
 
     @Transactional
     public void añadirUsuarioAEquipo(Long id, Long id1) {
+        if (id == null || id1 == null) {
+            throw new EquipoServiceException("Los identificadores del equipo y del usuario son obligatorios");
+        }
         Equipo equipo = equipoRepository.findById(id).orElse(null);
         Usuario usuario = usuarioRepository.findById(id1).orElse(null);
         if (equipo == null || usuario == null) {
             throw new EquipoServiceException("No existe equipo o usuario");
         }
+        if (equipo.getUsuarios().contains(usuario)) {
+            throw new EquipoServiceException("El usuario ya pertenece al equipo");
+        }
         equipo.addUsuario(usuario);
+    }
+
+    @Transactional
+    public void eliminarUsuarioDeEquipo(Long idEquipo, Long idUsuario) {
+        if (idEquipo == null || idUsuario == null) {
+            throw new EquipoServiceException("Los identificadores del equipo y del usuario son obligatorios");
+        }
+        Equipo equipo = equipoRepository.findById(idEquipo)
+                .orElseThrow(() -> new EquipoServiceException("No existe equipo con id " + idEquipo));
+        Usuario usuario = usuarioRepository.findById(idUsuario)
+                .orElseThrow(() -> new EquipoServiceException("No existe usuario con id " + idUsuario));
+        if (!equipo.getUsuarios().contains(usuario)) {
+            throw new EquipoServiceException("El usuario no pertenece al equipo");
+        }
+        equipo.getUsuarios().remove(usuario);
+        usuario.getEquipos().remove(equipo);
     }
 
     @Transactional(readOnly = true)

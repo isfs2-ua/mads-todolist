@@ -8,6 +8,9 @@ import madstodolist.dto.EquipoData;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.NullAndEmptySource;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import java.util.List;
 
@@ -29,6 +32,17 @@ public class EquipoServiceTest {
         EquipoData equipoBd = equipoService.recuperarEquipo(equipo.getId());
         assertThat(equipoBd).isNotNull();
         assertThat(equipoBd.getNombre()).isEqualTo("Proyecto 1");
+    }
+
+    @ParameterizedTest
+    @NullAndEmptySource
+    @ValueSource(strings = {" ", " \t\n"})
+    public void crearEquipoSinNombreLanzaExcepcion(String nombre) {
+        assertThatThrownBy(() -> equipoService.crearEquipo(nombre))
+                .isInstanceOf(EquipoServiceException.class)
+                .hasMessage("El nombre del equipo no puede estar vacío");
+
+        assertThat(equipoService.findAllOrdenadoPorNombre()).isEmpty();
     }
 
     @Test
@@ -68,6 +82,164 @@ public class EquipoServiceTest {
         List<UsuarioData> usuarios = equipoService.usuariosEquipo(equipo.getId());
         assertThat(usuarios).hasSize(1);
         assertThat(usuarios.get(0).getEmail()).isEqualTo("user@ua");
+    }
+
+    @Test
+    public void añadirUsuarioQueYaPerteneceAlEquipoLanzaExcepcion() {
+        UsuarioData datosUsuario = new UsuarioData();
+        datosUsuario.setEmail("miembro@ua");
+        datosUsuario.setPassword("123");
+        UsuarioData usuario = usuarioService.registrar(datosUsuario);
+        EquipoData equipo = equipoService.crearEquipo("Proyecto 1");
+        equipoService.añadirUsuarioAEquipo(equipo.getId(), usuario.getId());
+
+        assertThatThrownBy(() -> equipoService.añadirUsuarioAEquipo(equipo.getId(), usuario.getId()))
+                .isInstanceOf(EquipoServiceException.class)
+                .hasMessage("El usuario ya pertenece al equipo");
+
+        assertThat(equipoService.usuariosEquipo(equipo.getId())).containsExactly(usuario);
+        assertThat(equipoService.equiposUsuario(usuario.getId())).containsExactly(equipo);
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    public void añadirConIdentificadorNuloLanzaExcepcion(boolean equipoNulo) {
+        UsuarioData datosUsuario = new UsuarioData();
+        datosUsuario.setEmail("nuevo@ua");
+        datosUsuario.setPassword("123");
+        UsuarioData usuario = usuarioService.registrar(datosUsuario);
+        EquipoData equipo = equipoService.crearEquipo("Proyecto 1");
+        Long idEquipo = equipoNulo ? null : equipo.getId();
+        Long idUsuario = equipoNulo ? usuario.getId() : null;
+
+        assertThatThrownBy(() -> equipoService.añadirUsuarioAEquipo(idEquipo, idUsuario))
+                .isInstanceOf(EquipoServiceException.class)
+                .hasMessage("Los identificadores del equipo y del usuario son obligatorios");
+
+        assertThat(equipoService.usuariosEquipo(equipo.getId())).isEmpty();
+        assertThat(equipoService.equiposUsuario(usuario.getId())).isEmpty();
+    }
+
+    @Test
+    public void eliminarUsuarioDeEquipo() {
+        // GIVEN: un usuario que pertenece a un equipo
+        UsuarioData usuario = new UsuarioData();
+        usuario.setEmail("miembro@ua");
+        usuario.setPassword("123");
+        usuario = usuarioService.registrar(usuario);
+        EquipoData equipo = equipoService.crearEquipo("Proyecto 1");
+        equipoService.añadirUsuarioAEquipo(equipo.getId(), usuario.getId());
+        assertThat(equipoService.usuariosEquipo(equipo.getId())).containsExactly(usuario);
+        assertThat(equipoService.equiposUsuario(usuario.getId())).containsExactly(equipo);
+
+        // WHEN: el usuario deja el equipo
+        equipoService.eliminarUsuarioDeEquipo(equipo.getId(), usuario.getId());
+
+        // THEN: desaparece la pertenencia, pero se conservan el usuario y el equipo
+        assertThat(equipoService.usuariosEquipo(equipo.getId())).isEmpty();
+        assertThat(equipoService.equiposUsuario(usuario.getId())).isEmpty();
+        assertThat(usuarioService.findById(usuario.getId())).isEqualTo(usuario);
+        assertThat(equipoService.recuperarEquipo(equipo.getId())).isEqualTo(equipo);
+    }
+
+    @Test
+    public void eliminarPertenenciaConservaOtrosMiembrosYEquipos() {
+        // GIVEN: dos usuarios que pertenecen a dos equipos
+        UsuarioData datosPrimero = new UsuarioData();
+        datosPrimero.setEmail("primero@ua");
+        datosPrimero.setPassword("123");
+        UsuarioData primero = usuarioService.registrar(datosPrimero);
+        UsuarioData datosSegundo = new UsuarioData();
+        datosSegundo.setEmail("segundo@ua");
+        datosSegundo.setPassword("456");
+        UsuarioData segundo = usuarioService.registrar(datosSegundo);
+        EquipoData equipo1 = equipoService.crearEquipo("Proyecto 1");
+        EquipoData equipo2 = equipoService.crearEquipo("Proyecto 2");
+        equipoService.añadirUsuarioAEquipo(equipo1.getId(), primero.getId());
+        equipoService.añadirUsuarioAEquipo(equipo1.getId(), segundo.getId());
+        equipoService.añadirUsuarioAEquipo(equipo2.getId(), primero.getId());
+        equipoService.añadirUsuarioAEquipo(equipo2.getId(), segundo.getId());
+
+        // WHEN: el primer usuario deja únicamente el primer equipo
+        equipoService.eliminarUsuarioDeEquipo(equipo1.getId(), primero.getId());
+
+        // THEN: desaparece solo esa pertenencia, en ambos sentidos
+        assertThat(equipoService.usuariosEquipo(equipo1.getId())).containsExactly(segundo);
+        assertThat(equipoService.equiposUsuario(primero.getId())).containsExactly(equipo2);
+        assertThat(equipoService.usuariosEquipo(equipo2.getId())).containsExactlyInAnyOrder(primero, segundo);
+        assertThat(equipoService.equiposUsuario(segundo.getId())).containsExactlyInAnyOrder(equipo1, equipo2);
+    }
+
+    @Test
+    public void eliminarUsuarioQueNoPerteneceAlEquipoLanzaExcepcion() {
+        UsuarioData datosUsuario = new UsuarioData();
+        datosUsuario.setEmail("ajeno@ua");
+        datosUsuario.setPassword("123");
+        UsuarioData usuario = usuarioService.registrar(datosUsuario);
+        EquipoData equipo = equipoService.crearEquipo("Proyecto 1");
+
+        assertThatThrownBy(() -> equipoService.eliminarUsuarioDeEquipo(equipo.getId(), usuario.getId()))
+                .isInstanceOf(EquipoServiceException.class)
+                .hasMessage("El usuario no pertenece al equipo");
+
+        assertThat(equipoService.usuariosEquipo(equipo.getId())).isEmpty();
+        assertThat(equipoService.equiposUsuario(usuario.getId())).isEmpty();
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    public void eliminarConIdentificadorNuloLanzaExcepcion(boolean equipoNulo) {
+        UsuarioData datosUsuario = new UsuarioData();
+        datosUsuario.setEmail("miembro@ua");
+        datosUsuario.setPassword("123");
+        UsuarioData usuario = usuarioService.registrar(datosUsuario);
+        EquipoData equipo = equipoService.crearEquipo("Proyecto 1");
+        equipoService.añadirUsuarioAEquipo(equipo.getId(), usuario.getId());
+        Long idEquipo = equipoNulo ? null : equipo.getId();
+        Long idUsuario = equipoNulo ? usuario.getId() : null;
+
+        assertThatThrownBy(() -> equipoService.eliminarUsuarioDeEquipo(idEquipo, idUsuario))
+                .isInstanceOf(EquipoServiceException.class)
+                .hasMessage("Los identificadores del equipo y del usuario son obligatorios");
+
+        assertThat(equipoService.usuariosEquipo(equipo.getId())).containsExactly(usuario);
+        assertThat(equipoService.equiposUsuario(usuario.getId())).containsExactly(equipo);
+    }
+
+    @Test
+    public void eliminarDeEquipoInexistenteLanzaExcepcion() {
+        UsuarioData datosUsuario = new UsuarioData();
+        datosUsuario.setEmail("miembro@ua");
+        datosUsuario.setPassword("123");
+        UsuarioData usuario = usuarioService.registrar(datosUsuario);
+        EquipoData equipo = equipoService.crearEquipo("Proyecto 1");
+        equipoService.añadirUsuarioAEquipo(equipo.getId(), usuario.getId());
+        Long idEquipoInexistente = Long.MAX_VALUE;
+
+        assertThatThrownBy(() -> equipoService.eliminarUsuarioDeEquipo(idEquipoInexistente, usuario.getId()))
+                .isInstanceOf(EquipoServiceException.class)
+                .hasMessage("No existe equipo con id " + idEquipoInexistente);
+
+        assertThat(equipoService.usuariosEquipo(equipo.getId())).containsExactly(usuario);
+        assertThat(equipoService.equiposUsuario(usuario.getId())).containsExactly(equipo);
+    }
+
+    @Test
+    public void eliminarUsuarioInexistenteLanzaExcepcion() {
+        UsuarioData datosUsuario = new UsuarioData();
+        datosUsuario.setEmail("miembro@ua");
+        datosUsuario.setPassword("123");
+        UsuarioData usuario = usuarioService.registrar(datosUsuario);
+        EquipoData equipo = equipoService.crearEquipo("Proyecto 1");
+        equipoService.añadirUsuarioAEquipo(equipo.getId(), usuario.getId());
+        Long idUsuarioInexistente = Long.MAX_VALUE;
+
+        assertThatThrownBy(() -> equipoService.eliminarUsuarioDeEquipo(equipo.getId(), idUsuarioInexistente))
+                .isInstanceOf(EquipoServiceException.class)
+                .hasMessage("No existe usuario con id " + idUsuarioInexistente);
+
+        assertThat(equipoService.usuariosEquipo(equipo.getId())).containsExactly(usuario);
+        assertThat(equipoService.equiposUsuario(usuario.getId())).containsExactly(equipo);
     }
 
     @Test
