@@ -179,6 +179,24 @@ public class EquipoServiceTest {
     }
 
     @Test
+    public void eliminarDeEquipoInexistenteLanzaExcepcion() {
+        UsuarioData datosUsuario = new UsuarioData();
+        datosUsuario.setEmail("miembro@ua");
+        datosUsuario.setPassword("123");
+        UsuarioData usuario = usuarioService.registrar(datosUsuario);
+        EquipoData equipo = equipoService.crearEquipo("Proyecto 1");
+        equipoService.añadirUsuarioAEquipo(equipo.getId(), usuario.getId());
+        Long idEquipoInexistente = Long.MAX_VALUE;
+
+        assertThatThrownBy(() -> equipoService.eliminarUsuarioDeEquipo(idEquipoInexistente, usuario.getId()))
+                .isInstanceOf(EquipoServiceException.class)
+                .hasMessage("No existe equipo con id " + idEquipoInexistente);
+
+        assertThat(equipoService.usuariosEquipo(equipo.getId())).containsExactly(usuario);
+        assertThat(equipoService.equiposUsuario(usuario.getId())).containsExactly(equipo);
+    }
+
+    @Test
     public void recuperarEquiposDeUsuario() {
         // GIVEN
         // Un usuario y dos equipos en la base de datos
