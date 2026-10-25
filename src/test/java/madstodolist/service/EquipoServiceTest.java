@@ -143,6 +143,34 @@ public class EquipoServiceTest {
     }
 
     @Test
+    public void eliminarPertenenciaConservaOtrosMiembrosYEquipos() {
+        // GIVEN: dos usuarios que pertenecen a dos equipos
+        UsuarioData datosPrimero = new UsuarioData();
+        datosPrimero.setEmail("primero@ua");
+        datosPrimero.setPassword("123");
+        UsuarioData primero = usuarioService.registrar(datosPrimero);
+        UsuarioData datosSegundo = new UsuarioData();
+        datosSegundo.setEmail("segundo@ua");
+        datosSegundo.setPassword("456");
+        UsuarioData segundo = usuarioService.registrar(datosSegundo);
+        EquipoData equipo1 = equipoService.crearEquipo("Proyecto 1");
+        EquipoData equipo2 = equipoService.crearEquipo("Proyecto 2");
+        equipoService.añadirUsuarioAEquipo(equipo1.getId(), primero.getId());
+        equipoService.añadirUsuarioAEquipo(equipo1.getId(), segundo.getId());
+        equipoService.añadirUsuarioAEquipo(equipo2.getId(), primero.getId());
+        equipoService.añadirUsuarioAEquipo(equipo2.getId(), segundo.getId());
+
+        // WHEN: el primer usuario deja únicamente el primer equipo
+        equipoService.eliminarUsuarioDeEquipo(equipo1.getId(), primero.getId());
+
+        // THEN: desaparece solo esa pertenencia, en ambos sentidos
+        assertThat(equipoService.usuariosEquipo(equipo1.getId())).containsExactly(segundo);
+        assertThat(equipoService.equiposUsuario(primero.getId())).containsExactly(equipo2);
+        assertThat(equipoService.usuariosEquipo(equipo2.getId())).containsExactlyInAnyOrder(primero, segundo);
+        assertThat(equipoService.equiposUsuario(segundo.getId())).containsExactlyInAnyOrder(equipo1, equipo2);
+    }
+
+    @Test
     public void eliminarUsuarioQueNoPerteneceAlEquipoLanzaExcepcion() {
         UsuarioData datosUsuario = new UsuarioData();
         datosUsuario.setEmail("ajeno@ua");
