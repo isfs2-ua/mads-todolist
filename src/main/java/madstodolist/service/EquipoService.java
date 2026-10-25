@@ -61,6 +61,16 @@ public class EquipoService {
         equipo.addUsuario(usuario);
     }
 
+    @Transactional
+    public void eliminarUsuarioDeEquipo(Long idEquipo, Long idUsuario) {
+        Equipo equipo = equipoRepository.findById(idEquipo)
+                .orElseThrow(() -> new EquipoServiceException("No existe equipo con id " + idEquipo));
+        Usuario usuario = usuarioRepository.findById(idUsuario)
+                .orElseThrow(() -> new EquipoServiceException("No existe usuario con id " + idUsuario));
+        equipo.getUsuarios().remove(usuario);
+        usuario.getEquipos().remove(equipo);
+    }
+
     @Transactional(readOnly = true)
     public List<UsuarioData> usuariosEquipo(Long id) {
         Equipo equipo = equipoRepository.findById(id).orElse(null);

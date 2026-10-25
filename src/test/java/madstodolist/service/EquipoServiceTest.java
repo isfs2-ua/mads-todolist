@@ -71,6 +71,28 @@ public class EquipoServiceTest {
     }
 
     @Test
+    public void eliminarUsuarioDeEquipo() {
+        // GIVEN: un usuario que pertenece a un equipo
+        UsuarioData usuario = new UsuarioData();
+        usuario.setEmail("miembro@ua");
+        usuario.setPassword("123");
+        usuario = usuarioService.registrar(usuario);
+        EquipoData equipo = equipoService.crearEquipo("Proyecto 1");
+        equipoService.añadirUsuarioAEquipo(equipo.getId(), usuario.getId());
+        assertThat(equipoService.usuariosEquipo(equipo.getId())).containsExactly(usuario);
+        assertThat(equipoService.equiposUsuario(usuario.getId())).containsExactly(equipo);
+
+        // WHEN: el usuario deja el equipo
+        equipoService.eliminarUsuarioDeEquipo(equipo.getId(), usuario.getId());
+
+        // THEN: desaparece la pertenencia, pero se conservan el usuario y el equipo
+        assertThat(equipoService.usuariosEquipo(equipo.getId())).isEmpty();
+        assertThat(equipoService.equiposUsuario(usuario.getId())).isEmpty();
+        assertThat(usuarioService.findById(usuario.getId())).isEqualTo(usuario);
+        assertThat(equipoService.recuperarEquipo(equipo.getId())).isEqualTo(equipo);
+    }
+
+    @Test
     public void recuperarEquiposDeUsuario() {
         // GIVEN
         // Un usuario y dos equipos en la base de datos
