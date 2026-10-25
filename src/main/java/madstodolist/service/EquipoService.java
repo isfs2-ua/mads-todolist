@@ -69,6 +69,9 @@ public class EquipoService {
 
     @Transactional
     public void eliminarUsuarioDeEquipo(Long idEquipo, Long idUsuario) {
+        if (idEquipo == null || idUsuario == null) {
+            throw new EquipoServiceException("Los identificadores del equipo y del usuario son obligatorios");
+        }
         Equipo equipo = equipoRepository.findById(idEquipo)
                 .orElseThrow(() -> new EquipoServiceException("No existe equipo con id " + idEquipo));
         Usuario usuario = usuarioRepository.findById(idUsuario)

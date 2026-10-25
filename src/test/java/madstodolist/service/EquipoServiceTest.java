@@ -139,6 +139,26 @@ public class EquipoServiceTest {
         assertThat(equipoService.equiposUsuario(usuario.getId())).isEmpty();
     }
 
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    public void eliminarConIdentificadorNuloLanzaExcepcion(boolean equipoNulo) {
+        UsuarioData datosUsuario = new UsuarioData();
+        datosUsuario.setEmail("miembro@ua");
+        datosUsuario.setPassword("123");
+        UsuarioData usuario = usuarioService.registrar(datosUsuario);
+        EquipoData equipo = equipoService.crearEquipo("Proyecto 1");
+        equipoService.añadirUsuarioAEquipo(equipo.getId(), usuario.getId());
+        Long idEquipo = equipoNulo ? null : equipo.getId();
+        Long idUsuario = equipoNulo ? usuario.getId() : null;
+
+        assertThatThrownBy(() -> equipoService.eliminarUsuarioDeEquipo(idEquipo, idUsuario))
+                .isInstanceOf(EquipoServiceException.class)
+                .hasMessage("Los identificadores del equipo y del usuario son obligatorios");
+
+        assertThat(equipoService.usuariosEquipo(equipo.getId())).containsExactly(usuario);
+        assertThat(equipoService.equiposUsuario(usuario.getId())).containsExactly(equipo);
+    }
+
     @Test
     public void recuperarEquiposDeUsuario() {
         // GIVEN
