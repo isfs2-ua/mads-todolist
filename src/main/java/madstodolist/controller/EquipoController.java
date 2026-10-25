@@ -42,6 +42,13 @@ public class EquipoController {
         return "listaEquipos";
     }
 
+    @GetMapping("/equipos/nuevo")
+    public String formNuevoEquipo(Model model) {
+        model.addAttribute("usuario", comprobarUsuarioLogeado());
+        model.addAttribute("equipoData", new EquipoData());
+        return "formNuevoEquipo";
+    }
+
     @GetMapping("/equipos/{id}/miembros")
     public String miembrosEquipo(@PathVariable("id") Long idEquipo, Model model) {
         model.addAttribute("usuario", comprobarUsuarioLogeado());

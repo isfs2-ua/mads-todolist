@@ -1,5 +1,15 @@
 # Contexto del proyecto ToDoList
 
+## Historia 009: primer incremento web (25/10/2026)
+
+- GET `/equipos/nuevo` muestra `formNuevoEquipo.html` con el campo de nombre,
+  el menú del usuario y un enlace para cancelar. El listado enlaza al formulario.
+- `EquipoController.formNuevoEquipo()` requiere sesión de un usuario existente;
+  admite usuarios normales y administradores. Los accesos sin sesión o con un
+  usuario inexistente devuelven HTTP 401. `EquipoWebTest` cubre estos casos.
+- Este incremento solo muestra el formulario. Su POST, la incorporación y la
+  salida de equipos quedan para incrementos posteriores.
+
 ## Actualización del 25/10/2026: miembros de equipos (segundo incremento)
 
 - GET `/equipos/{id}/miembros` usa `EquipoController.miembrosEquipo()` y la vista

@@ -46,6 +46,51 @@ public class EquipoWebTest {
     }
 
     @Test
+    public void formularioNuevoEquipoMuestraNombreYEnlaces() throws Exception {
+        UsuarioData usuario = crearUsuario(false);
+        MockHttpSession session = sesion(usuario.getId());
+
+        mockMvc.perform(get("/equipos/nuevo").session(session))
+                .andExpect(status().isOk())
+                .andExpect(view().name("formNuevoEquipo"))
+                .andExpect(model().attribute("usuario", usuario))
+                .andExpect(model().attribute("equipoData", hasProperty("nombre", nullValue())))
+                .andExpect(content().string(containsString("method=\"post\" action=\"/equipos/nuevo\"")))
+                .andExpect(content().string(containsString("name=\"nombre\"")))
+                .andExpect(content().string(containsString("for=\"nombre\"")))
+                .andExpect(content().string(containsString(">Crear equipo</button>")))
+                .andExpect(content().string(containsString("href=\"/equipos\">Cancelar</a>")))
+                .andExpect(content().string(containsString("Cerrar sesión Usuario de equipos")));
+
+        mockMvc.perform(get("/equipos").session(session))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("href=\"/equipos/nuevo\">Nuevo equipo</a>")));
+    }
+
+    @Test
+    public void formularioNuevoEquipoPermiteAdministrador() throws Exception {
+        UsuarioData administrador = crearUsuario(true);
+
+        mockMvc.perform(get("/equipos/nuevo").session(sesion(administrador.getId())))
+                .andExpect(status().isOk())
+                .andExpect(view().name("formNuevoEquipo"));
+    }
+
+    @Test
+    public void formularioNuevoEquipoSinSesionDevuelveNoAutorizado() throws Exception {
+        mockMvc.perform(get("/equipos/nuevo"))
+                .andExpect(status().isUnauthorized())
+                .andExpect(status().reason("Usuario no autorizado"));
+    }
+
+    @Test
+    public void formularioNuevoEquipoConUsuarioInexistenteDevuelveNoAutorizado() throws Exception {
+        mockMvc.perform(get("/equipos/nuevo").session(sesion(Long.MAX_VALUE)))
+                .andExpect(status().isUnauthorized())
+                .andExpect(status().reason("Usuario no autorizado"));
+    }
+
+    @Test
     public void listadoMuestraTodosLosEquiposOrdenadosYMenu() throws Exception {
         UsuarioData usuario = crearUsuario(false);
         EquipoData zeta = equipoService.crearEquipo("Zeta");
