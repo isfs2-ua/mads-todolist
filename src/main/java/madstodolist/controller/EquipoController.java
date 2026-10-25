@@ -85,6 +85,23 @@ public class EquipoController {
         return "redirect:/equipos";
     }
 
+    @PostMapping("/equipos/{id}/salir")
+    public String salirEquipo(@PathVariable("id") Long idEquipo, RedirectAttributes flash) {
+        UsuarioData usuario = comprobarUsuarioLogeado();
+        try {
+            equipoService.recuperarEquipo(idEquipo);
+        } catch (EquipoServiceException ex) {
+            throw new EquipoNotFoundException();
+        }
+        try {
+            equipoService.eliminarUsuarioDeEquipo(idEquipo, usuario.getId());
+            flash.addFlashAttribute("mensaje", "Has salido del equipo correctamente");
+        } catch (EquipoServiceException ex) {
+            flash.addFlashAttribute("error", ex.getMessage());
+        }
+        return "redirect:/equipos";
+    }
+
     @GetMapping("/equipos/{id}/miembros")
     public String miembrosEquipo(@PathVariable("id") Long idEquipo, Model model) {
         model.addAttribute("usuario", comprobarUsuarioLogeado());

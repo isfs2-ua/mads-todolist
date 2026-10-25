@@ -31,7 +31,10 @@
                               th:action="@{/equipos/{id}/unirse(id=${equipo.id})}">
                             <button class="btn btn-primary btn-sm" type="submit">Unirme</button>
                         </form>
-                        <span th:if="${#lists.contains(equiposUsuario, equipo)}">Ya eres miembro</span>
+                        <form method="post" th:if="${#lists.contains(equiposUsuario, equipo)}"
+                              th:action="@{/equipos/{id}/salir(id=${equipo.id})}">
+                            <button class="btn btn-outline-danger btn-sm" type="submit">Salir</button>
+                        </form>
                     </td>
                 </tr>
                 </tbody>

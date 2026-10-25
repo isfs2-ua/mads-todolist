@@ -14,12 +14,12 @@
 - El POST también exige sesión válida. Las pruebas cubren creación por usuario normal
   y administrador, errores de nombre y accesos sin sesión o con usuario inexistente.
   Validación del incremento: 42 pruebas de servicio y controller de equipos superadas.
-- La salida de equipos queda para el siguiente incremento.
+- La creación, incorporación y salida de equipos están implementadas en incrementos separados.
 
 ## Historia 009: incorporación a equipos (25/10/2026)
 
 - El listado recibe `equiposUsuario` y ofrece un formulario «Unirme» solo para equipos
-  a los que no pertenece el usuario. Los demás muestran «Ya eres miembro».
+  a los que no pertenece el usuario. Los demás ofrecen «Salir».
 - POST `/equipos/{id}/unirse` usa únicamente el identificador del usuario de la sesión;
   permite usuarios normales y administradores. Sin sesión válida devuelve HTTP 401,
   antes de buscar el equipo. Un equipo inexistente devuelve HTTP 404.
@@ -28,6 +28,20 @@
 - `EquipoWebTest` cubre incorporación, cambio del botón, mensajes, usuario de sesión,
   petición duplicada, equipo inexistente, acceso no autorizado y rechazo de GET.
   Validación: 50 pruebas de servicio y controller de equipos superadas.
+
+## Historia 009: salida de equipos (25/10/2026)
+
+- POST `/equipos/{id}/salir` elimina la pertenencia del usuario de la sesión y
+  redirige al listado con «Has salido del equipo correctamente». El botón «Salir»
+  aparece solo si pertenece al equipo; tras salir vuelve a aparecer «Unirme».
+- Requiere sesión válida (HTTP 401 antes de buscar el equipo). Un equipo inexistente
+  devuelve HTTP 404; intentar salir sin pertenecer al equipo redirige con el error
+  del servicio. GET no modifica pertenencias y devuelve HTTP 405.
+- Las pruebas cubren usuario normal y administrador, cambio de botones, mensajes,
+  errores y permisos. También comprueban que un parámetro `idUsuario` no permite
+  expulsar a otro miembro y que se conservan los otros miembros y equipos.
+- Validación: 58 pruebas de servicio y controller de equipos superadas;
+  `git diff --check` sin errores.
 
 ## Actualización del 25/10/2026: miembros de equipos (segundo incremento)
 
