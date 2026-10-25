@@ -71,6 +71,23 @@ public class EquipoServiceTest {
     }
 
     @Test
+    public void añadirUsuarioQueYaPerteneceAlEquipoLanzaExcepcion() {
+        UsuarioData datosUsuario = new UsuarioData();
+        datosUsuario.setEmail("miembro@ua");
+        datosUsuario.setPassword("123");
+        UsuarioData usuario = usuarioService.registrar(datosUsuario);
+        EquipoData equipo = equipoService.crearEquipo("Proyecto 1");
+        equipoService.añadirUsuarioAEquipo(equipo.getId(), usuario.getId());
+
+        assertThatThrownBy(() -> equipoService.añadirUsuarioAEquipo(equipo.getId(), usuario.getId()))
+                .isInstanceOf(EquipoServiceException.class)
+                .hasMessage("El usuario ya pertenece al equipo");
+
+        assertThat(equipoService.usuariosEquipo(equipo.getId())).containsExactly(usuario);
+        assertThat(equipoService.equiposUsuario(usuario.getId())).containsExactly(equipo);
+    }
+
+    @Test
     public void eliminarUsuarioDeEquipo() {
         // GIVEN: un usuario que pertenece a un equipo
         UsuarioData usuario = new UsuarioData();
