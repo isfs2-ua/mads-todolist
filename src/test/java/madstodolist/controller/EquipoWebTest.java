@@ -5,6 +5,9 @@ import madstodolist.dto.UsuarioData;
 import madstodolist.service.EquipoService;
 import madstodolist.service.UsuarioService;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.NullAndEmptySource;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -13,7 +16,9 @@ import org.springframework.test.context.jdbc.Sql;
 import org.springframework.test.web.servlet.MockMvc;
 
 import static org.hamcrest.Matchers.*;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @SpringBootTest
@@ -88,6 +93,67 @@ public class EquipoWebTest {
         mockMvc.perform(get("/equipos/nuevo").session(sesion(Long.MAX_VALUE)))
                 .andExpect(status().isUnauthorized())
                 .andExpect(status().reason("Usuario no autorizado"));
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = {false, true})
+    public void crearEquipoGuardaYRedirigeAlListadoConConfirmacion(boolean administrador) throws Exception {
+        UsuarioData usuario = crearUsuario(administrador);
+        MockHttpSession session = sesion(usuario.getId());
+
+        mockMvc.perform(post("/equipos/nuevo").session(session).param("nombre", "Proyecto web"))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/equipos"))
+                .andExpect(flash().attribute("mensaje", "Equipo creado correctamente"));
+
+        assertThat(equipoService.findAllOrdenadoPorNombre())
+                .extracting(EquipoData::getNombre).containsExactly("Proyecto web");
+        mockMvc.perform(get("/equipos").session(session))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("Proyecto web")))
+                .andExpect(content().string(containsString("Equipo creado correctamente")));
+    }
+
+    @ParameterizedTest
+    @NullAndEmptySource
+    @ValueSource(strings = {" ", " \t\n"})
+    public void crearEquipoSinNombreMuestraErrorYNoGuarda(String nombre) throws Exception {
+        UsuarioData usuario = crearUsuario(false);
+        org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder peticion =
+                post("/equipos/nuevo").session(sesion(usuario.getId()));
+        if (nombre != null) {
+            peticion.param("nombre", nombre);
+        }
+
+        mockMvc.perform(peticion)
+                .andExpect(status().isOk())
+                .andExpect(view().name("formNuevoEquipo"))
+                .andExpect(model().attribute("usuario", usuario))
+                .andExpect(model().attribute("equipoData", hasProperty("nombre", equalTo(nombre))))
+                .andExpect(model().attribute("error", "El nombre del equipo no puede estar vacío"))
+                .andExpect(content().string(containsString("El nombre del equipo no puede estar vacío")))
+                .andExpect(content().string(containsString("Cerrar sesión Usuario de equipos")))
+                .andExpect(flash().attributeCount(0));
+
+        assertThat(equipoService.findAllOrdenadoPorNombre()).isEmpty();
+    }
+
+    @Test
+    public void crearEquipoSinSesionDevuelveNoAutorizadoYNoGuarda() throws Exception {
+        mockMvc.perform(post("/equipos/nuevo").param("nombre", "Equipo sin sesión"))
+                .andExpect(status().isUnauthorized())
+                .andExpect(status().reason("Usuario no autorizado"));
+
+        assertThat(equipoService.findAllOrdenadoPorNombre()).isEmpty();
+    }
+
+    @Test
+    public void crearEquipoConUsuarioInexistenteDevuelveNoAutorizadoYNoGuarda() throws Exception {
+        mockMvc.perform(post("/equipos/nuevo").session(sesion(Long.MAX_VALUE)).param("nombre", "Equipo ajeno"))
+                .andExpect(status().isUnauthorized())
+                .andExpect(status().reason("Usuario no autorizado"));
+
+        assertThat(equipoService.findAllOrdenadoPorNombre()).isEmpty();
     }
 
     @Test

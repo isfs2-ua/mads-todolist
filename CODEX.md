@@ -1,14 +1,20 @@
 # Contexto del proyecto ToDoList
 
-## Historia 009: primer incremento web (25/10/2026)
+## Historia 009: creación de equipos en la web (25/10/2026)
 
 - GET `/equipos/nuevo` muestra `formNuevoEquipo.html` con el campo de nombre,
   el menú del usuario y un enlace para cancelar. El listado enlaza al formulario.
 - `EquipoController.formNuevoEquipo()` requiere sesión de un usuario existente;
   admite usuarios normales y administradores. Los accesos sin sesión o con un
   usuario inexistente devuelven HTTP 401. `EquipoWebTest` cubre estos casos.
-- Este incremento solo muestra el formulario. Su POST, la incorporación y la
-  salida de equipos quedan para incrementos posteriores.
+- POST `/equipos/nuevo` usa `EquipoController.crearEquipo()` para guardar el nombre
+  mediante el servicio y redirigir a `/equipos` con «Equipo creado correctamente».
+  Si el nombre es nulo, vacío o solo contiene espacios, vuelve al formulario con
+  el nombre recibido y el error del servicio; no se guarda ningún equipo.
+- El POST también exige sesión válida. Las pruebas cubren creación por usuario normal
+  y administrador, errores de nombre y accesos sin sesión o con usuario inexistente.
+  Validación del incremento: 42 pruebas de servicio y controller de equipos superadas.
+- La incorporación y la salida de equipos quedan para incrementos posteriores.
 
 ## Actualización del 25/10/2026: miembros de equipos (segundo incremento)
 

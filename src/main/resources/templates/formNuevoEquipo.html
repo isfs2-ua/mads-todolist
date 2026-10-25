@@ -5,6 +5,7 @@
 <nav th:replace="fragments :: menuUsuario(${usuario})"></nav>
 <div class="container-fluid mt-3">
     <h2>Nuevo equipo</h2>
+    <div class="alert alert-danger" role="alert" th:if="${error}" th:text="${error}"></div>
     <form method="post" th:action="@{/equipos/nuevo}" th:object="${equipoData}">
         <div class="col-6">
             <div class="form-group">

@@ -9,6 +9,7 @@
     <div class="row mt-3">
         <div class="col">
             <h2>Listado de equipos</h2>
+            <div class="alert alert-success" role="status" th:if="${mensaje}" th:text="${mensaje}"></div>
             <a class="btn btn-primary mb-3" th:href="@{/equipos/nuevo}">Nuevo equipo</a>
             <table class="table table-striped">
                 <thead>
