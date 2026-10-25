@@ -8,6 +8,9 @@ import madstodolist.dto.EquipoData;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.NullAndEmptySource;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import java.util.List;
 
@@ -29,6 +32,17 @@ public class EquipoServiceTest {
         EquipoData equipoBd = equipoService.recuperarEquipo(equipo.getId());
         assertThat(equipoBd).isNotNull();
         assertThat(equipoBd.getNombre()).isEqualTo("Proyecto 1");
+    }
+
+    @ParameterizedTest
+    @NullAndEmptySource
+    @ValueSource(strings = {" ", " \t\n"})
+    public void crearEquipoSinNombreLanzaExcepcion(String nombre) {
+        assertThatThrownBy(() -> equipoService.crearEquipo(nombre))
+                .isInstanceOf(EquipoServiceException.class)
+                .hasMessage("El nombre del equipo no puede estar vacío");
+
+        assertThat(equipoService.findAllOrdenadoPorNombre()).isEmpty();
     }
 
     @Test
