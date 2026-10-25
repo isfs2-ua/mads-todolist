@@ -1,5 +1,20 @@
 # Contexto del proyecto ToDoList
 
+## Actualización del 25/10/2026: miembros de equipos (segundo incremento)
+
+- GET `/equipos/{id}/miembros` usa `EquipoController.miembrosEquipo()` y la vista
+  `miembrosEquipo.html`. El nombre de cada equipo en `/equipos` enlaza a esta ruta.
+- La vista muestra nombre del equipo e identificador, nombre y correo de sus miembros,
+  sin contraseñas, con mensaje para equipos vacíos y enlace de vuelta al listado.
+- Cualquier usuario con sesión válida puede consultar miembros. La autenticación se
+  comprueba antes de buscar el equipo; un equipo inexistente devuelve HTTP 404
+  mediante `EquipoNotFoundException`.
+- `EquipoWebTest` incorpora pruebas de miembros, exclusión de usuarios de otros equipos,
+  ausencia de contraseñas, equipo vacío, administrador, equipo inexistente y accesos
+  sin sesión o con usuario inexistente; también verifica los enlaces desde el listado.
+- Validación: las 11 pruebas de `EquipoWebTest` y la suite completa de 95 pruebas
+  pasan sin fallos ni errores; `git diff --check` sin errores.
+
 ## Actualización del 25/10/2026: listado de equipos (primer incremento)
 
 - La rama `listado-equipos` incorpora GET `/equipos` mediante `EquipoController.listadoEquipos()`

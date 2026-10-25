@@ -19,7 +19,9 @@
                 <tbody>
                 <tr th:each="equipo : ${equipos}">
                     <td th:text="${equipo.id}"></td>
-                    <td th:text="${equipo.nombre}"></td>
+                    <td>
+                        <a th:href="@{/equipos/{id}/miembros(id=${equipo.id})}" th:text="${equipo.nombre}"></a>
+                    </td>
                 </tr>
                 </tbody>
             </table>
