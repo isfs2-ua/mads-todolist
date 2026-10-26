@@ -37,6 +37,33 @@ public class EquipoService {
         return modelMapper.map(equipo, EquipoData.class);
     }
 
+    @Transactional
+    public EquipoData modificarEquipo(Long idEquipo, String nombre) {
+        if (idEquipo == null) {
+            throw new EquipoServiceException("El identificador del equipo es obligatorio");
+        }
+        if (nombre == null || nombre.trim().isEmpty()) {
+            throw new EquipoServiceException("El nombre del equipo no puede estar vacío");
+        }
+        Equipo equipo = equipoRepository.findById(idEquipo)
+                .orElseThrow(() -> new EquipoServiceException("No existe equipo con id " + idEquipo));
+        if (equipoRepository.existsByNombreAndIdNot(nombre, idEquipo)) {
+            throw new EquipoServiceException("Ya existe otro equipo con ese nombre");
+        }
+        equipo.setNombre(nombre);
+        return modelMapper.map(equipo, EquipoData.class);
+    }
+
+    @Transactional
+    public void eliminarEquipo(Long idEquipo) {
+        if (idEquipo == null) {
+            throw new EquipoServiceException("El identificador del equipo es obligatorio");
+        }
+        Equipo equipo = equipoRepository.findById(idEquipo)
+                .orElseThrow(() -> new EquipoServiceException("No existe equipo con id " + idEquipo));
+        equipoRepository.delete(equipo);
+    }
+
     @Transactional(readOnly = true)
     public EquipoData recuperarEquipo(Long id) {
         Equipo equipo = equipoRepository.findById(id).orElse(null);
