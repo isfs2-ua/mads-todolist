@@ -37,6 +37,14 @@ public class EquipoService {
         return modelMapper.map(equipo, EquipoData.class);
     }
 
+    @Transactional
+    public EquipoData modificarEquipo(Long idEquipo, String nombre) {
+        Equipo equipo = equipoRepository.findById(idEquipo)
+                .orElseThrow(() -> new EquipoServiceException("No existe equipo con id " + idEquipo));
+        equipo.setNombre(nombre);
+        return modelMapper.map(equipo, EquipoData.class);
+    }
+
     @Transactional(readOnly = true)
     public EquipoData recuperarEquipo(Long id) {
         Equipo equipo = equipoRepository.findById(id).orElse(null);

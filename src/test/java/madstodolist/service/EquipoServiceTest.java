@@ -46,6 +46,22 @@ public class EquipoServiceTest {
     }
 
     @Test
+    public void modificarNombreEquipo() {
+        // GIVEN: un equipo existente
+        EquipoData equipo = equipoService.crearEquipo("Proyecto inicial");
+
+        // WHEN: modificamos su nombre
+        EquipoData equipoModificado = equipoService.modificarEquipo(equipo.getId(), "Proyecto renovado");
+
+        // THEN: conserva su identificador y el nuevo nombre queda guardado
+        assertThat(equipoModificado.getId()).isEqualTo(equipo.getId());
+        assertThat(equipoModificado.getNombre()).isEqualTo("Proyecto renovado");
+        assertThat(equipoService.recuperarEquipo(equipo.getId()).getNombre())
+                .isEqualTo("Proyecto renovado");
+        assertThat(equipoService.findAllOrdenadoPorNombre()).hasSize(1);
+    }
+
+    @Test
     public void listadoEquiposOrdenAlfabetico() {
         // GIVEN
         // Dos equipos en la base de datos
