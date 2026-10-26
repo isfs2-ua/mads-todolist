@@ -350,6 +350,62 @@ public class EquipoWebTest {
         assertThat(equipoService.usuariosEquipo(equipo.getId())).containsExactly(usuario);
     }
 
+    @ParameterizedTest
+    @ValueSource(booleans = {false, true})
+    public void formularioEditarEquipoMuestraNombreActualYEnlaces(boolean administrador) throws Exception {
+        UsuarioData usuario = crearUsuario(administrador);
+        EquipoData equipo = equipoService.crearEquipo("Proyecto actual");
+        MockHttpSession session = sesion(usuario.getId());
+
+        mockMvc.perform(get("/equipos/" + equipo.getId() + "/editar").session(session))
+                .andExpect(status().isOk())
+                .andExpect(view().name("formEditarEquipo"))
+                .andExpect(model().attribute("usuario", usuario))
+                .andExpect(model().attribute("equipoData", equipo))
+                .andExpect(content().string(containsString("method=\"post\" action=\"/equipos/" + equipo.getId() + "/editar\"")))
+                .andExpect(content().string(containsString("name=\"nombre\"")))
+                .andExpect(content().string(containsString("value=\"Proyecto actual\"")))
+                .andExpect(content().string(containsString(">Guardar cambios</button>")))
+                .andExpect(content().string(containsString("href=\"/equipos\">Cancelar</a>")))
+                .andExpect(content().string(containsString("Cerrar sesión Usuario de equipos")));
+
+        mockMvc.perform(get("/equipos").session(session))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("href=\"/equipos/" + equipo.getId() + "/editar\">Editar</a>")));
+        assertThat(equipoService.recuperarEquipo(equipo.getId()).getNombre()).isEqualTo("Proyecto actual");
+    }
+
+    @Test
+    public void formularioEditarEquipoInexistenteDevuelveNoEncontrado() throws Exception {
+        UsuarioData usuario = crearUsuario(false);
+
+        mockMvc.perform(get("/equipos/" + Long.MAX_VALUE + "/editar").session(sesion(usuario.getId())))
+                .andExpect(status().isNotFound())
+                .andExpect(status().reason("Equipo no encontrado"));
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = {false, true})
+    public void formularioEditarEquipoSinUsuarioValidoDevuelveNoAutorizado(boolean sesionInexistente) throws Exception {
+        EquipoData equipo = equipoService.crearEquipo("Proyecto actual");
+        org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder peticion =
+                get("/equipos/" + equipo.getId() + "/editar");
+        if (sesionInexistente) {
+            peticion.session(sesion(Long.MAX_VALUE));
+        }
+
+        mockMvc.perform(peticion)
+                .andExpect(status().isUnauthorized())
+                .andExpect(status().reason("Usuario no autorizado"));
+    }
+
+    @Test
+    public void formularioEditarCompruebaSesionAntesDeBuscarEquipo() throws Exception {
+        mockMvc.perform(get("/equipos/" + Long.MAX_VALUE + "/editar"))
+                .andExpect(status().isUnauthorized())
+                .andExpect(status().reason("Usuario no autorizado"));
+    }
+
     @Test
     public void listadoMuestraTodosLosEquiposOrdenadosYMenu() throws Exception {
         UsuarioData usuario = crearUsuario(false);

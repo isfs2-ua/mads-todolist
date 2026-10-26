@@ -102,6 +102,17 @@ public class EquipoController {
         return "redirect:/equipos";
     }
 
+    @GetMapping("/equipos/{id}/editar")
+    public String formEditarEquipo(@PathVariable("id") Long idEquipo, Model model) {
+        model.addAttribute("usuario", comprobarUsuarioLogeado());
+        try {
+            model.addAttribute("equipoData", equipoService.recuperarEquipo(idEquipo));
+        } catch (EquipoServiceException ex) {
+            throw new EquipoNotFoundException();
+        }
+        return "formEditarEquipo";
+    }
+
     @GetMapping("/equipos/{id}/miembros")
     public String miembrosEquipo(@PathVariable("id") Long idEquipo, Model model) {
         model.addAttribute("usuario", comprobarUsuarioLogeado());

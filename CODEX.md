@@ -1,5 +1,17 @@
 # Contexto del proyecto ToDoList
 
+## Historia 010: primer incremento web (26/10/2026)
+
+- La rama `gestion-equipo` ya dispone de `EquipoService.modificarEquipo()` y
+  `eliminarEquipo()`, desarrollados con TDD.
+- GET `/equipos/{id}/editar` muestra `formEditarEquipo.html` con el nombre actual,
+  menú del usuario y enlace para cancelar. El listado incluye una columna «Gestión»
+  con el enlace «Editar» para cada equipo.
+- `EquipoController.formEditarEquipo()` requiere sesión válida antes de buscar el
+  equipo. Admite usuarios normales y administradores; devuelve HTTP 401 sin usuario
+  válido y HTTP 404 si el equipo no existe. `EquipoWebTest` cubre estos casos.
+- El guardado del formulario y la eliminación web quedan para incrementos posteriores.
+
 ## Historia 009: creación de equipos en la web (25/10/2026)
 
 - GET `/equipos/nuevo` muestra `formNuevoEquipo.html` con el campo de nombre,
