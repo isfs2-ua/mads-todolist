@@ -93,6 +93,20 @@ public class EquipoServiceTest {
     }
 
     @Test
+    public void modificarEquipoInexistenteLanzaExcepcion() {
+        EquipoData equipo = equipoService.crearEquipo("Proyecto inicial");
+        Long idEquipoInexistente = Long.MAX_VALUE;
+
+        assertThatThrownBy(() -> equipoService.modificarEquipo(idEquipoInexistente, "Proyecto renovado"))
+                .isInstanceOf(EquipoServiceException.class)
+                .hasMessage("No existe equipo con id " + idEquipoInexistente);
+
+        assertThat(equipoService.recuperarEquipo(equipo.getId()).getNombre())
+                .isEqualTo("Proyecto inicial");
+        assertThat(equipoService.findAllOrdenadoPorNombre()).containsExactly(equipo);
+    }
+
+    @Test
     public void listadoEquiposOrdenAlfabetico() {
         // GIVEN
         // Dos equipos en la base de datos
