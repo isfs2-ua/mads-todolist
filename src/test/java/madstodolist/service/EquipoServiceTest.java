@@ -186,6 +186,40 @@ public class EquipoServiceTest {
     }
 
     @Test
+    public void eliminarEquipoConMiembrosConservaUsuariosYOtrasPertenencias() {
+        // GIVEN: dos miembros del equipo y uno de ellos también pertenece a otro equipo
+        UsuarioData datosPrimero = new UsuarioData();
+        datosPrimero.setEmail("primero@ua");
+        datosPrimero.setPassword("123");
+        UsuarioData primero = usuarioService.registrar(datosPrimero);
+        UsuarioData datosSegundo = new UsuarioData();
+        datosSegundo.setEmail("segundo@ua");
+        datosSegundo.setPassword("456");
+        UsuarioData segundo = usuarioService.registrar(datosSegundo);
+        EquipoData equipo = equipoService.crearEquipo("Proyecto a eliminar");
+        EquipoData otroEquipo = equipoService.crearEquipo("Otro proyecto");
+        equipoService.añadirUsuarioAEquipo(equipo.getId(), primero.getId());
+        equipoService.añadirUsuarioAEquipo(equipo.getId(), segundo.getId());
+        equipoService.añadirUsuarioAEquipo(otroEquipo.getId(), segundo.getId());
+
+        // WHEN: eliminamos el equipo con sus miembros
+        equipoService.eliminarEquipo(equipo.getId());
+
+        // THEN: desaparecen el equipo y sus pertenencias, conservando las cuentas y el otro equipo
+        assertThatThrownBy(() -> equipoService.recuperarEquipo(equipo.getId()))
+                .isInstanceOf(EquipoServiceException.class)
+                .hasMessage("No existe equipo con id " + equipo.getId());
+        assertThat(equipoService.findAllOrdenadoPorNombre()).containsExactly(otroEquipo);
+        assertThat(usuarioService.findById(primero.getId())).isEqualTo(primero);
+        assertThat(usuarioService.findById(segundo.getId())).isEqualTo(segundo);
+        assertThat(equipoService.equiposUsuario(primero.getId())).isEmpty();
+        assertThat(equipoService.equiposUsuario(segundo.getId())).containsExactly(otroEquipo);
+        assertThat(equipoService.usuariosEquipo(otroEquipo.getId())).containsExactly(segundo);
+        assertThat(equipoService.recuperarEquipo(otroEquipo.getId()).getNombre())
+                .isEqualTo("Otro proyecto");
+    }
+
+    @Test
     public void listadoEquiposOrdenAlfabetico() {
         // GIVEN
         // Dos equipos en la base de datos
