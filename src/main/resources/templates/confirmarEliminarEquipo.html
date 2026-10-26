@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="fragments :: head (titulo='Eliminar equipo')"></head>
+<body>
+<nav th:replace="fragments :: menuUsuario(${usuario})"></nav>
+<div class="container-fluid mt-3">
+    <h2>Eliminar equipo</h2>
+    <p>¿Seguro que quieres eliminar el equipo <strong th:text="${equipo.nombre}"></strong>?</p>
+    <p>Se eliminarán sus pertenencias. Las cuentas de sus participantes se conservarán.</p>
+    <form method="post" th:action="@{/equipos/{id}/eliminar(id=${equipo.id})}">
+        <button class="btn btn-danger" type="submit" name="confirmar" value="true">Confirmar eliminación</button>
+        <a class="btn btn-secondary" th:href="@{/equipos}">Cancelar</a>
+    </form>
+</div>
+<div th:replace="fragments :: javascript"></div>
+</body>
+</html>

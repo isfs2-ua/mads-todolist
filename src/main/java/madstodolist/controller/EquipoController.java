@@ -3,6 +3,7 @@ package madstodolist.controller;
 import madstodolist.authentication.ManagerUserSession;
 import madstodolist.controller.exception.EquipoNotFoundException;
 import madstodolist.controller.exception.UsuarioNoLogeadoException;
+import madstodolist.controller.exception.UsuarioNoAdministradorException;
 import madstodolist.dto.EquipoData;
 import madstodolist.dto.UsuarioData;
 import madstodolist.service.EquipoService;
@@ -15,6 +16,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 @Controller
@@ -34,6 +36,14 @@ public class EquipoController {
         UsuarioData usuario = idUsuario != null ? usuarioService.findById(idUsuario) : null;
         if (usuario == null) {
             throw new UsuarioNoLogeadoException();
+        }
+        return usuario;
+    }
+
+    private UsuarioData comprobarAdministrador() {
+        UsuarioData usuario = comprobarUsuarioLogeado();
+        if (!usuario.isAdministrador()) {
+            throw new UsuarioNoAdministradorException();
         }
         return usuario;
     }
@@ -104,7 +114,7 @@ public class EquipoController {
 
     @GetMapping("/equipos/{id}/editar")
     public String formEditarEquipo(@PathVariable("id") Long idEquipo, Model model) {
-        model.addAttribute("usuario", comprobarUsuarioLogeado());
+        model.addAttribute("usuario", comprobarAdministrador());
         try {
             model.addAttribute("equipoData", equipoService.recuperarEquipo(idEquipo));
         } catch (EquipoServiceException ex) {
@@ -117,7 +127,7 @@ public class EquipoController {
     public String guardarEquipo(@PathVariable("id") Long idEquipo,
                                 @ModelAttribute("equipoData") EquipoData equipoData,
                                 Model model, RedirectAttributes flash) {
-        model.addAttribute("usuario", comprobarUsuarioLogeado());
+        model.addAttribute("usuario", comprobarAdministrador());
         try {
             equipoService.recuperarEquipo(idEquipo);
         } catch (EquipoServiceException ex) {
@@ -131,6 +141,34 @@ public class EquipoController {
             return "formEditarEquipo";
         }
         flash.addFlashAttribute("mensaje", "Equipo modificado correctamente");
+        return "redirect:/equipos";
+    }
+
+    @GetMapping("/equipos/{id}/eliminar")
+    public String confirmarEliminarEquipo(@PathVariable("id") Long idEquipo, Model model) {
+        model.addAttribute("usuario", comprobarAdministrador());
+        try {
+            model.addAttribute("equipo", equipoService.recuperarEquipo(idEquipo));
+        } catch (EquipoServiceException ex) {
+            throw new EquipoNotFoundException();
+        }
+        return "confirmarEliminarEquipo";
+    }
+
+    @PostMapping("/equipos/{id}/eliminar")
+    public String eliminarEquipo(@PathVariable("id") Long idEquipo,
+                                 @RequestParam(defaultValue = "false") boolean confirmar,
+                                 RedirectAttributes flash) {
+        comprobarAdministrador();
+        if (!confirmar) {
+            return "redirect:/equipos";
+        }
+        try {
+            equipoService.eliminarEquipo(idEquipo);
+        } catch (EquipoServiceException ex) {
+            throw new EquipoNotFoundException();
+        }
+        flash.addFlashAttribute("mensaje", "Equipo eliminado correctamente");
         return "redirect:/equipos";
     }
 

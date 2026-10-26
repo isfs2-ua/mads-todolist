@@ -1,5 +1,27 @@
 # Contexto del proyecto ToDoList
 
+## Historia 010: condiciones de satisfacción y eliminación web (26/10/2026)
+
+Esta actualización prevalece sobre los permisos de los incrementos iniciales:
+solo los administradores pueden editar o eliminar equipos.
+
+- El listado muestra «Editar equipo» y «Eliminar equipo» únicamente al administrador.
+  Los GET y POST de edición y eliminación comprueban ese permiso antes de consultar
+  el equipo. Usuarios normales reciben HTTP 401 con el motivo de administrador;
+  los accesos sin sesión válida también reciben HTTP 401. No basta con ocultar botones.
+- GET `/equipos/{id}/eliminar` muestra `confirmarEliminarEquipo.html` con el nombre
+  del equipo, la pregunta de confirmación y «Cancelar», que vuelve al listado.
+  Consultar o cancelar esta página conserva el equipo y sus participantes.
+- POST `/equipos/{id}/eliminar` requiere `confirmar=true`. Entonces llama al servicio
+  y redirige al listado con «Equipo eliminado correctamente». Sin confirmación no
+  elimina nada. Los equipos inexistentes devuelven HTTP 404 al confirmar o consultar.
+- `GestionEquiposWebTest` comprueba visibilidad, peticiones directas sin permisos,
+  confirmación, cancelación, eliminación de pertenencias, conservación de cuentas y
+  de otros equipos, y la indisponibilidad del equipo borrado. `EquipoWebTest` comprueba
+  la edición como administrador, validaciones, nombre actualizado y miembros conservados.
+- Validación final: 99 pruebas de equipos y suite completa de 178 pruebas superadas,
+  sin fallos ni errores; `git diff --check` sin errores.
+
 ## Historia 010: guardado de equipos (26/10/2026)
 
 - POST `/equipos/{id}/editar` usa `EquipoController.guardarEquipo()` para modificar

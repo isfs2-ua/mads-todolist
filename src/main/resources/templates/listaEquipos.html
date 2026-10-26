@@ -18,7 +18,7 @@
                     <th scope="col">Identificador</th>
                     <th scope="col">Nombre</th>
                     <th scope="col">Participación</th>
-                    <th scope="col">Gestión</th>
+                    <th scope="col" th:if="${usuario.administrador}">Gestión</th>
                 </tr>
                 </thead>
                 <tbody>
@@ -37,8 +37,9 @@
                             <button class="btn btn-outline-danger btn-sm" type="submit">Salir</button>
                         </form>
                     </td>
-                    <td>
-                        <a class="btn btn-secondary btn-sm" th:href="@{/equipos/{id}/editar(id=${equipo.id})}">Editar</a>
+                    <td th:if="${usuario.administrador}">
+                        <a class="btn btn-secondary btn-sm" th:href="@{/equipos/{id}/editar(id=${equipo.id})}">Editar equipo</a>
+                        <a class="btn btn-danger btn-sm" th:href="@{/equipos/{id}/eliminar(id=${equipo.id})}">Eliminar equipo</a>
                     </td>
                 </tr>
                 </tbody>

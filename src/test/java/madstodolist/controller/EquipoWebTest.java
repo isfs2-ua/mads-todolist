@@ -350,10 +350,9 @@ public class EquipoWebTest {
         assertThat(equipoService.usuariosEquipo(equipo.getId())).containsExactly(usuario);
     }
 
-    @ParameterizedTest
-    @ValueSource(booleans = {false, true})
-    public void formularioEditarEquipoMuestraNombreActualYEnlaces(boolean administrador) throws Exception {
-        UsuarioData usuario = crearUsuario(administrador);
+    @Test
+    public void formularioEditarEquipoMuestraNombreActualYEnlaces() throws Exception {
+        UsuarioData usuario = crearUsuario(true);
         EquipoData equipo = equipoService.crearEquipo("Proyecto actual");
         MockHttpSession session = sesion(usuario.getId());
 
@@ -371,13 +370,13 @@ public class EquipoWebTest {
 
         mockMvc.perform(get("/equipos").session(session))
                 .andExpect(status().isOk())
-                .andExpect(content().string(containsString("href=\"/equipos/" + equipo.getId() + "/editar\">Editar</a>")));
+                .andExpect(content().string(containsString("href=\"/equipos/" + equipo.getId() + "/editar\">Editar equipo</a>")));
         assertThat(equipoService.recuperarEquipo(equipo.getId()).getNombre()).isEqualTo("Proyecto actual");
     }
 
     @Test
     public void formularioEditarEquipoInexistenteDevuelveNoEncontrado() throws Exception {
-        UsuarioData usuario = crearUsuario(false);
+        UsuarioData usuario = crearUsuario(true);
 
         mockMvc.perform(get("/equipos/" + Long.MAX_VALUE + "/editar").session(sesion(usuario.getId())))
                 .andExpect(status().isNotFound())
@@ -406,10 +405,9 @@ public class EquipoWebTest {
                 .andExpect(status().reason("Usuario no autorizado"));
     }
 
-    @ParameterizedTest
-    @ValueSource(booleans = {false, true})
-    public void guardarEquipoModificaElDeLaRutaYConservaMiembros(boolean administrador) throws Exception {
-        UsuarioData usuario = crearUsuario(administrador);
+    @Test
+    public void guardarEquipoModificaElDeLaRutaYConservaMiembros() throws Exception {
+        UsuarioData usuario = crearUsuario(true);
         EquipoData equipo = equipoService.crearEquipo("Proyecto original");
         EquipoData otro = equipoService.crearEquipo("Otro equipo");
         equipoService.añadirUsuarioAEquipo(equipo.getId(), usuario.getId());
@@ -440,7 +438,7 @@ public class EquipoWebTest {
     @NullAndEmptySource
     @ValueSource(strings = {" ", " \t\n"})
     public void guardarEquipoSinNombreMuestraErrorYConservaNombreOriginal(String nombre) throws Exception {
-        UsuarioData usuario = crearUsuario(false);
+        UsuarioData usuario = crearUsuario(true);
         EquipoData equipo = equipoService.crearEquipo("Proyecto original");
         org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder peticion =
                 post("/equipos/" + equipo.getId() + "/editar").session(sesion(usuario.getId()));
@@ -464,7 +462,7 @@ public class EquipoWebTest {
 
     @Test
     public void guardarEquipoConNombreDuplicadoMuestraErrorYConservaFormulario() throws Exception {
-        UsuarioData usuario = crearUsuario(false);
+        UsuarioData usuario = crearUsuario(true);
         EquipoData equipo = equipoService.crearEquipo("Proyecto original");
         EquipoData otro = equipoService.crearEquipo("Nombre ocupado");
 
@@ -485,7 +483,7 @@ public class EquipoWebTest {
 
     @Test
     public void guardarEquipoConSuPropioNombreTieneExito() throws Exception {
-        UsuarioData usuario = crearUsuario(false);
+        UsuarioData usuario = crearUsuario(true);
         EquipoData equipo = equipoService.crearEquipo("Proyecto original");
 
         mockMvc.perform(post("/equipos/" + equipo.getId() + "/editar").session(sesion(usuario.getId()))
@@ -499,7 +497,7 @@ public class EquipoWebTest {
 
     @Test
     public void guardarEquipoInexistenteDevuelveNoEncontrado() throws Exception {
-        UsuarioData usuario = crearUsuario(false);
+        UsuarioData usuario = crearUsuario(true);
 
         mockMvc.perform(post("/equipos/" + Long.MAX_VALUE + "/editar").session(sesion(usuario.getId()))
                         .param("nombre", "Proyecto renovado"))
