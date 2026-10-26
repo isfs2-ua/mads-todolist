@@ -7,6 +7,7 @@ import org.springframework.test.context.jdbc.Sql;
 import madstodolist.dto.EquipoData;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.tuple;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.NullAndEmptySource;
@@ -106,6 +107,40 @@ public class EquipoServiceTest {
         assertThat(equipoService.recuperarEquipo(otroEquipo.getId()).getNombre())
                 .isEqualTo("Otro proyecto");
         assertThat(equipoService.findAllOrdenadoPorNombre()).containsExactlyInAnyOrder(equipo, otroEquipo);
+    }
+
+    @Test
+    public void modificarNombreConservaParticipantesYActualizaEquiposUsuario() {
+        // GIVEN: dos miembros de un equipo y otra pertenencia del primer usuario
+        UsuarioData datosPrimero = new UsuarioData();
+        datosPrimero.setEmail("primero@ua");
+        datosPrimero.setPassword("123");
+        UsuarioData primero = usuarioService.registrar(datosPrimero);
+        UsuarioData datosSegundo = new UsuarioData();
+        datosSegundo.setEmail("segundo@ua");
+        datosSegundo.setPassword("456");
+        UsuarioData segundo = usuarioService.registrar(datosSegundo);
+        EquipoData equipo = equipoService.crearEquipo("Proyecto inicial");
+        EquipoData otroEquipo = equipoService.crearEquipo("Otro proyecto");
+        equipoService.añadirUsuarioAEquipo(equipo.getId(), primero.getId());
+        equipoService.añadirUsuarioAEquipo(equipo.getId(), segundo.getId());
+        equipoService.añadirUsuarioAEquipo(otroEquipo.getId(), primero.getId());
+
+        // WHEN: renombramos el equipo
+        equipoService.modificarEquipo(equipo.getId(), "Equipo renovado");
+
+        // THEN: se conservan los miembros y el nuevo nombre aparece en todas las consultas
+        assertThat(equipoService.usuariosEquipo(equipo.getId())).containsExactlyInAnyOrder(primero, segundo);
+        assertThat(equipoService.equiposUsuario(primero.getId())).extracting("id", "nombre")
+                .containsExactly(tuple(equipo.getId(), "Equipo renovado"),
+                        tuple(otroEquipo.getId(), "Otro proyecto"));
+        assertThat(equipoService.equiposUsuario(segundo.getId())).extracting("id", "nombre")
+                .containsExactly(tuple(equipo.getId(), "Equipo renovado"));
+        assertThat(equipoService.findAllOrdenadoPorNombre()).extracting("id", "nombre")
+                .containsExactly(tuple(equipo.getId(), "Equipo renovado"),
+                        tuple(otroEquipo.getId(), "Otro proyecto"));
+        assertThat(equipoService.recuperarEquipo(equipo.getId()).getNombre()).isEqualTo("Equipo renovado");
+        assertThat(equipoService.usuariosEquipo(otroEquipo.getId())).containsExactly(primero);
     }
 
     @Test
