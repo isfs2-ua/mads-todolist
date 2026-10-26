@@ -107,6 +107,19 @@ public class EquipoServiceTest {
     }
 
     @Test
+    public void modificarEquipoConIdentificadorNuloLanzaExcepcion() {
+        EquipoData equipo = equipoService.crearEquipo("Proyecto inicial");
+
+        assertThatThrownBy(() -> equipoService.modificarEquipo(null, "Proyecto renovado"))
+                .isInstanceOf(EquipoServiceException.class)
+                .hasMessage("El identificador del equipo es obligatorio");
+
+        assertThat(equipoService.recuperarEquipo(equipo.getId()).getNombre())
+                .isEqualTo("Proyecto inicial");
+        assertThat(equipoService.findAllOrdenadoPorNombre()).containsExactly(equipo);
+    }
+
+    @Test
     public void listadoEquiposOrdenAlfabetico() {
         // GIVEN
         // Dos equipos en la base de datos

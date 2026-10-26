@@ -39,6 +39,9 @@ public class EquipoService {
 
     @Transactional
     public EquipoData modificarEquipo(Long idEquipo, String nombre) {
+        if (idEquipo == null) {
+            throw new EquipoServiceException("El identificador del equipo es obligatorio");
+        }
         if (nombre == null || nombre.trim().isEmpty()) {
             throw new EquipoServiceException("El nombre del equipo no puede estar vacío");
         }
