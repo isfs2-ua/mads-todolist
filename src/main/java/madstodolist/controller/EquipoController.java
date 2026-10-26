@@ -113,6 +113,27 @@ public class EquipoController {
         return "formEditarEquipo";
     }
 
+    @PostMapping("/equipos/{id}/editar")
+    public String guardarEquipo(@PathVariable("id") Long idEquipo,
+                                @ModelAttribute("equipoData") EquipoData equipoData,
+                                Model model, RedirectAttributes flash) {
+        model.addAttribute("usuario", comprobarUsuarioLogeado());
+        try {
+            equipoService.recuperarEquipo(idEquipo);
+        } catch (EquipoServiceException ex) {
+            throw new EquipoNotFoundException();
+        }
+        equipoData.setId(idEquipo);
+        try {
+            equipoService.modificarEquipo(idEquipo, equipoData.getNombre());
+        } catch (EquipoServiceException ex) {
+            model.addAttribute("error", ex.getMessage());
+            return "formEditarEquipo";
+        }
+        flash.addFlashAttribute("mensaje", "Equipo modificado correctamente");
+        return "redirect:/equipos";
+    }
+
     @GetMapping("/equipos/{id}/miembros")
     public String miembrosEquipo(@PathVariable("id") Long idEquipo, Model model) {
         model.addAttribute("usuario", comprobarUsuarioLogeado());

@@ -1,5 +1,20 @@
 # Contexto del proyecto ToDoList
 
+## Historia 010: guardado de equipos (26/10/2026)
+
+- POST `/equipos/{id}/editar` usa `EquipoController.guardarEquipo()` para modificar
+  el nombre y redirigir al listado con «Equipo modificado correctamente».
+- Comprueba la sesión antes de buscar el equipo (HTTP 401); un equipo inexistente
+  devuelve HTTP 404. El identificador de la URL determina el equipo que se modifica,
+  aunque la petición incluya otro identificador.
+- Los errores de nombre vacío o duplicado se muestran en `formEditarEquipo.html`,
+  conservando el nombre recibido y la acción del formulario con el equipo correcto.
+- Las pruebas cubren usuario normal y administrador, persistencia del nombre,
+  conservación de miembros, nombre sin cambios, errores, permisos y actualización
+  del listado y de la vista de miembros. Pasan 90 pruebas de servicio y controller
+  de equipos; `git diff --check` sin errores.
+- La eliminación web queda para el siguiente incremento.
+
 ## Historia 010: primer incremento web (26/10/2026)
 
 - La rama `gestion-equipo` ya dispone de `EquipoService.modificarEquipo()` y
