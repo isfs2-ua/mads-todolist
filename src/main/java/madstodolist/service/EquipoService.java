@@ -39,6 +39,9 @@ public class EquipoService {
 
     @Transactional
     public EquipoData modificarEquipo(Long idEquipo, String nombre) {
+        if (nombre == null || nombre.trim().isEmpty()) {
+            throw new EquipoServiceException("El nombre del equipo no puede estar vacío");
+        }
         Equipo equipo = equipoRepository.findById(idEquipo)
                 .orElseThrow(() -> new EquipoServiceException("No existe equipo con id " + idEquipo));
         equipo.setNombre(nombre);

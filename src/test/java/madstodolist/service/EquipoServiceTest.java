@@ -61,6 +61,21 @@ public class EquipoServiceTest {
         assertThat(equipoService.findAllOrdenadoPorNombre()).hasSize(1);
     }
 
+    @ParameterizedTest
+    @NullAndEmptySource
+    @ValueSource(strings = {" ", " \t\n"})
+    public void modificarEquipoSinNombreLanzaExcepcion(String nombre) {
+        EquipoData equipo = equipoService.crearEquipo("Proyecto inicial");
+
+        assertThatThrownBy(() -> equipoService.modificarEquipo(equipo.getId(), nombre))
+                .isInstanceOf(EquipoServiceException.class)
+                .hasMessage("El nombre del equipo no puede estar vacío");
+
+        assertThat(equipoService.recuperarEquipo(equipo.getId()).getNombre())
+                .isEqualTo("Proyecto inicial");
+        assertThat(equipoService.findAllOrdenadoPorNombre()).containsExactly(equipo);
+    }
+
     @Test
     public void listadoEquiposOrdenAlfabetico() {
         // GIVEN
