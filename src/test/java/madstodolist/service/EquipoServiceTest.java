@@ -171,6 +171,21 @@ public class EquipoServiceTest {
     }
 
     @Test
+    public void eliminarEquipoVacio() {
+        EquipoData equipo = equipoService.crearEquipo("Proyecto a eliminar");
+        EquipoData otroEquipo = equipoService.crearEquipo("Otro proyecto");
+
+        equipoService.eliminarEquipo(equipo.getId());
+
+        assertThat(equipoService.findAllOrdenadoPorNombre()).containsExactly(otroEquipo);
+        assertThatThrownBy(() -> equipoService.recuperarEquipo(equipo.getId()))
+                .isInstanceOf(EquipoServiceException.class)
+                .hasMessage("No existe equipo con id " + equipo.getId());
+        assertThat(equipoService.recuperarEquipo(otroEquipo.getId()).getNombre())
+                .isEqualTo("Otro proyecto");
+    }
+
+    @Test
     public void listadoEquiposOrdenAlfabetico() {
         // GIVEN
         // Dos equipos en la base de datos
