@@ -56,6 +56,9 @@ public class EquipoService {
 
     @Transactional
     public void eliminarEquipo(Long idEquipo) {
+        if (idEquipo == null) {
+            throw new EquipoServiceException("El identificador del equipo es obligatorio");
+        }
         Equipo equipo = equipoRepository.findById(idEquipo)
                 .orElseThrow(() -> new EquipoServiceException("No existe equipo con id " + idEquipo));
         equipoRepository.delete(equipo);
