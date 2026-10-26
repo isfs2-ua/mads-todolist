@@ -93,6 +93,22 @@ public class EquipoServiceTest {
     }
 
     @Test
+    public void modificarEquipoConSuPropioNombre() {
+        EquipoData equipo = equipoService.crearEquipo("Proyecto inicial");
+        EquipoData otroEquipo = equipoService.crearEquipo("Otro proyecto");
+
+        EquipoData equipoModificado = equipoService.modificarEquipo(equipo.getId(), equipo.getNombre());
+
+        assertThat(equipoModificado.getId()).isEqualTo(equipo.getId());
+        assertThat(equipoModificado.getNombre()).isEqualTo("Proyecto inicial");
+        assertThat(equipoService.recuperarEquipo(equipo.getId()).getNombre())
+                .isEqualTo("Proyecto inicial");
+        assertThat(equipoService.recuperarEquipo(otroEquipo.getId()).getNombre())
+                .isEqualTo("Otro proyecto");
+        assertThat(equipoService.findAllOrdenadoPorNombre()).containsExactlyInAnyOrder(equipo, otroEquipo);
+    }
+
+    @Test
     public void modificarEquipoInexistenteLanzaExcepcion() {
         EquipoData equipo = equipoService.crearEquipo("Proyecto inicial");
         Long idEquipoInexistente = Long.MAX_VALUE;
