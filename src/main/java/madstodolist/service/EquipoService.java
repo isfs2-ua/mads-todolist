@@ -44,6 +44,9 @@ public class EquipoService {
         }
         Equipo equipo = equipoRepository.findById(idEquipo)
                 .orElseThrow(() -> new EquipoServiceException("No existe equipo con id " + idEquipo));
+        if (equipoRepository.existsByNombreAndIdNot(nombre, idEquipo)) {
+            throw new EquipoServiceException("Ya existe otro equipo con ese nombre");
+        }
         equipo.setNombre(nombre);
         return modelMapper.map(equipo, EquipoData.class);
     }

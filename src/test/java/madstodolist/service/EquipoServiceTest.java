@@ -77,6 +77,22 @@ public class EquipoServiceTest {
     }
 
     @Test
+    public void modificarEquipoConNombreDeOtroEquipoLanzaExcepcion() {
+        EquipoData equipo = equipoService.crearEquipo("Proyecto inicial");
+        EquipoData otroEquipo = equipoService.crearEquipo("Proyecto existente");
+
+        assertThatThrownBy(() -> equipoService.modificarEquipo(equipo.getId(), otroEquipo.getNombre()))
+                .isInstanceOf(EquipoServiceException.class)
+                .hasMessage("Ya existe otro equipo con ese nombre");
+
+        assertThat(equipoService.recuperarEquipo(equipo.getId()).getNombre())
+                .isEqualTo("Proyecto inicial");
+        assertThat(equipoService.recuperarEquipo(otroEquipo.getId()).getNombre())
+                .isEqualTo("Proyecto existente");
+        assertThat(equipoService.findAllOrdenadoPorNombre()).containsExactlyInAnyOrder(equipo, otroEquipo);
+    }
+
+    @Test
     public void listadoEquiposOrdenAlfabetico() {
         // GIVEN
         // Dos equipos en la base de datos
