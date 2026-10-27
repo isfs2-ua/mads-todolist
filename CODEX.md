@@ -1,5 +1,54 @@
 # Contexto del proyecto ToDoList
 
+## Historia 010: condiciones de satisfacción y eliminación web (26/10/2026)
+
+Esta actualización prevalece sobre los permisos de los incrementos iniciales:
+solo los administradores pueden editar o eliminar equipos.
+
+- El listado muestra «Editar equipo» y «Eliminar equipo» únicamente al administrador.
+  Los GET y POST de edición y eliminación comprueban ese permiso antes de consultar
+  el equipo. Usuarios normales reciben HTTP 401 con el motivo de administrador;
+  los accesos sin sesión válida también reciben HTTP 401. No basta con ocultar botones.
+- GET `/equipos/{id}/eliminar` muestra `confirmarEliminarEquipo.html` con el nombre
+  del equipo, la pregunta de confirmación y «Cancelar», que vuelve al listado.
+  Consultar o cancelar esta página conserva el equipo y sus participantes.
+- POST `/equipos/{id}/eliminar` requiere `confirmar=true`. Entonces llama al servicio
+  y redirige al listado con «Equipo eliminado correctamente». Sin confirmación no
+  elimina nada. Los equipos inexistentes devuelven HTTP 404 al confirmar o consultar.
+- `GestionEquiposWebTest` comprueba visibilidad, peticiones directas sin permisos,
+  confirmación, cancelación, eliminación de pertenencias, conservación de cuentas y
+  de otros equipos, y la indisponibilidad del equipo borrado. `EquipoWebTest` comprueba
+  la edición como administrador, validaciones, nombre actualizado y miembros conservados.
+- Validación final: 99 pruebas de equipos y suite completa de 178 pruebas superadas,
+  sin fallos ni errores; `git diff --check` sin errores.
+
+## Historia 010: guardado de equipos (26/10/2026)
+
+- POST `/equipos/{id}/editar` usa `EquipoController.guardarEquipo()` para modificar
+  el nombre y redirigir al listado con «Equipo modificado correctamente».
+- Comprueba la sesión antes de buscar el equipo (HTTP 401); un equipo inexistente
+  devuelve HTTP 404. El identificador de la URL determina el equipo que se modifica,
+  aunque la petición incluya otro identificador.
+- Los errores de nombre vacío o duplicado se muestran en `formEditarEquipo.html`,
+  conservando el nombre recibido y la acción del formulario con el equipo correcto.
+- Las pruebas cubren usuario normal y administrador, persistencia del nombre,
+  conservación de miembros, nombre sin cambios, errores, permisos y actualización
+  del listado y de la vista de miembros. Pasan 90 pruebas de servicio y controller
+  de equipos; `git diff --check` sin errores.
+- La eliminación web queda para el siguiente incremento.
+
+## Historia 010: primer incremento web (26/10/2026)
+
+- La rama `gestion-equipo` ya dispone de `EquipoService.modificarEquipo()` y
+  `eliminarEquipo()`, desarrollados con TDD.
+- GET `/equipos/{id}/editar` muestra `formEditarEquipo.html` con el nombre actual,
+  menú del usuario y enlace para cancelar. El listado incluye una columna «Gestión»
+  con el enlace «Editar» para cada equipo.
+- `EquipoController.formEditarEquipo()` requiere sesión válida antes de buscar el
+  equipo. Admite usuarios normales y administradores; devuelve HTTP 401 sin usuario
+  válido y HTTP 404 si el equipo no existe. `EquipoWebTest` cubre estos casos.
+- El guardado del formulario y la eliminación web quedan para incrementos posteriores.
+
 ## Historia 009: creación de equipos en la web (25/10/2026)
 
 - GET `/equipos/nuevo` muestra `formNuevoEquipo.html` con el campo de nombre,
