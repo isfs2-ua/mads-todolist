@@ -6,6 +6,8 @@ Aplicación ToDoList de la asignatura [MADS](https://cvnet.cpd.ua.es/Guia-Docent
 
 Enlace al [Tablero Trello](https://trello.com/b/xYyf7yRf/todolist-mads).
 
+Documentación de la [práctica 2](doc/practica2.md) y la [práctica 3](doc/practica3.md).
+
 ## Requisitos
 
 Necesitas tener instalado en tu sistema:
